@@ -1,4 +1,4 @@
-# Easy Task — Claude Context
+# Stint — Claude Context
 
 A local-first productivity web app. No auth, no user accounts in the MVP.
 Supabase is used purely as the database — no login flow.

@@ -1,4 +1,4 @@
-# Easy Task — Product Specification (MVP)
+# Stint — Product Specification (MVP)
 
 **Document type:** Product Specification / PRD
 **Version:** 0.2
@@ -19,13 +19,13 @@
 
 ## 1. Overview
 
-Easy Task is a productivity app built around a single, opinionated workflow: capture tasks as free-form text, drag the ones that matter into a **Focus Session**, run a live timer, and review your work afterward in History.
+Stint is a productivity app built around a single, opinionated workflow: capture tasks as free-form text, drag the ones that matter into a **Focus Session**, run a live timer, and review your work afterward in History.
 
 It is deliberately not a feature-heavy todo manager. There are no projects, labels, due dates, priorities, or assignees. The product is one person's working method made into software — a clean text list at the core, a focus timer as the centerpiece, and an always-visible desktop gadget that keeps the session in front of you while you work in other apps.
 
 ### 1.1 Problem statement
 
-General-purpose todo apps are good at *storing* tasks but weak at *doing* them. They optimize for organization (lists, tags, filters) rather than execution. Easy Task optimizes for execution: the loop is **capture → focus → review**, and the focus step is the product's reason to exist.
+General-purpose todo apps are good at *storing* tasks but weak at *doing* them. They optimize for organization (lists, tags, filters) rather than execution. Stint optimizes for execution: the loop is **capture → focus → review**, and the focus step is the product's reason to exist.
 
 ### 1.2 Product principles
 
