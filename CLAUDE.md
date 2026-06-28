@@ -10,6 +10,7 @@ Supabase is used purely as the database — no login flow.
 - TipTap (rich text block editor)
 - dnd-kit (drag and drop)
 - Supabase (database only — no auth for MVP)
+- Vercel (hosting + deployment)
 
 ## Pages
 - **Today** — task list + Focus Session widget + today's completed sessions
