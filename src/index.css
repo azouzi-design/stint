@@ -1,1 +1,47 @@
 @import "tailwindcss";
+
+/* ─── Geist ─────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Geist';
+  src: url('../node_modules/geist/dist/fonts/geist-sans/Geist-Variable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+/* ─── Geist Pixel ────────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'GeistPixelCircle';
+  src: url('../node_modules/geist/dist/fonts/geist-pixel/GeistPixel-Circle.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'GeistPixelGrid';
+  src: url('../node_modules/geist/dist/fonts/geist-pixel/GeistPixel-Grid.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+
+/* ─── DSEG7 Classic ──────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'DSEG7Classic';
+  src: url('../node_modules/dseg/fonts/DSEG7-Classic/DSEG7Classic-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DSEG7Classic';
+  src: url('../node_modules/dseg/fonts/DSEG7-Classic/DSEG7Classic-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
+/* ─── Tailwind theme ─────────────────────────────────────────────────── */
+@theme {
+  --font-geist: 'Geist', sans-serif;
+  --font-pixel-circle: 'GeistPixelCircle', monospace;
+  --font-pixel-grid: 'GeistPixelGrid', monospace;
+  --font-dseg7: 'DSEG7Classic', monospace;
+}
