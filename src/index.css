@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* ─── Base font size (design system built on 14px) ───────────────────── */
+html {
+  font-size: 87.5%; /* 14px — accessible: respects browser settings */
+}
+
 /* ─── Geist ─────────────────────────────────────────────────────────── */
 @font-face {
   font-family: 'Geist';
@@ -38,10 +43,97 @@
   font-display: swap;
 }
 
+/* ─── Primitive color values (raw RGB tuples) ────────────────────────── */
+/* Referenced by semantic colors — not used directly in components       */
+:root {
+  --primitive-red: 218 47 53;
+  --primitive-teal: 13 140 125;
+  --primitive-amber: 255 153 10;
+  --primitive-neutral-0: 255 255 255;
+  --primitive-neutral-5: 252 252 252;
+  --primitive-neutral-10: 246 246 246;
+  --primitive-neutral-20: 237 237 237;
+  --primitive-neutral-30: 198 198 198;
+  --primitive-neutral-40: 168 168 168;
+  --primitive-neutral-50: 141 141 141;
+  --primitive-neutral-60: 111 111 111;
+  --primitive-neutral-70: 82 82 82;
+  --primitive-neutral-80: 57 57 57;
+  --primitive-neutral-90: 38 38 38;
+  --primitive-neutral-100: 22 22 22;
+}
+
 /* ─── Tailwind theme ─────────────────────────────────────────────────── */
 @theme {
+
+  /* Fonts */
   --font-geist: 'Geist', sans-serif;
   --font-pixel-circle: 'GeistPixelCircle', monospace;
   --font-pixel-grid: 'GeistPixelGrid', monospace;
   --font-dseg7: 'DSEG7Classic', monospace;
+
+  /* Primitive colors — available as Tailwind utilities (bg-neutral-50 etc.) */
+  --color-red: rgb(var(--primitive-red));
+  --color-teal: rgb(var(--primitive-teal));
+  --color-amber: rgb(var(--primitive-amber));
+  --color-neutral-0: rgb(var(--primitive-neutral-0));
+  --color-neutral-5: rgb(var(--primitive-neutral-5));
+  --color-neutral-10: rgb(var(--primitive-neutral-10));
+  --color-neutral-20: rgb(var(--primitive-neutral-20));
+  --color-neutral-30: rgb(var(--primitive-neutral-30));
+  --color-neutral-40: rgb(var(--primitive-neutral-40));
+  --color-neutral-50: rgb(var(--primitive-neutral-50));
+  --color-neutral-60: rgb(var(--primitive-neutral-60));
+  --color-neutral-70: rgb(var(--primitive-neutral-70));
+  --color-neutral-80: rgb(var(--primitive-neutral-80));
+  --color-neutral-90: rgb(var(--primitive-neutral-90));
+  --color-neutral-100: rgb(var(--primitive-neutral-100));
+
+  /* Spacing — overrides Tailwind defaults with design system scale */
+  --spacing-0: 0rem;
+  --spacing-2: 0.14285714285714285rem;
+  --spacing-4: 0.2857142857142857rem;
+  --spacing-6: 0.42857142857142855rem;
+  --spacing-8: 0.5714285714285714rem;
+  --spacing-12: 0.8571428571428571rem;
+  --spacing-16: 1.1428571428571428rem;
+  --spacing-20: 1.4285714285714286rem;
+  --spacing-24: 1.7142857142857142rem;
+  --spacing-28: 2rem;
+  --spacing-32: 2.2857142857142856rem;
+  --spacing-36: 2.5714285714285716rem;
+  --spacing-40: 2.857142857142857rem;
+  --spacing-44: 3.142857142857143rem;
+  --spacing-48: 3.4285714285714284rem;
+  --spacing-52: 3.7142857142857144rem;
+  --spacing-56: 4rem;
+  --spacing-60: 4.285714285714286rem;
+  --spacing-64: 4.571428571428571rem;
+  --spacing-68: 4.857142857142857rem;
+  --spacing-72: 5.142857142857143rem;
+  --spacing-76: 5.428571428571429rem;
+  --spacing-80: 5.714285714285714rem;
+  --spacing-84: 6rem;
+  --spacing-88: 6.285714285714286rem;
+  --spacing-92: 6.571428571428571rem;
+  --spacing-96: 6.857142857142857rem;
+  --spacing-100: 7.142857142857143rem;
+
+  /* Shadows */
+  --shadow-sm: 0px 1px 2px 1px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0px 2px 4px 1px rgba(0, 0, 0, 0.06);
+  --shadow-focus: 0px 0px 3px 1px rgb(var(--primitive-neutral-30) / 0.80);
+
+  /* Border radius */
+  --radius-0: 0rem;
+  --radius-2: 0.14285714285714285rem;
+  --radius-4: 0.2857142857142857rem;
+  --radius-6: 0.42857142857142855rem;
+  --radius-8: 0.5714285714285714rem;
+  --radius-12: 0.8571428571428571rem;
+  --radius-16: 1.1428571428571428rem;
+  --radius-20: 1.4285714285714286rem;
+  --radius-24: 1.7142857142857142rem;
+  --radius-full: 9999rem;
+
 }
