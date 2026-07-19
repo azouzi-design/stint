@@ -89,6 +89,31 @@ html {
   --color-neutral-90: rgb(var(--primitive-neutral-90));
   --color-neutral-100: rgb(var(--primitive-neutral-100));
 
+  /* Contextual colors — semantic roles, referencing primitives above.
+     No card-foreground/popover-foreground: they're the same value as
+     foreground, so components use text-foreground directly regardless
+     of surface. Same reasoning for skipping primary/secondary and the
+     status -foreground pairs (destructive/success/warning) — compose
+     those at the call site with bg-background/text-background instead. */
+  --color-background: rgb(var(--primitive-neutral-0) / <alpha-value>);
+  --color-card: rgb(var(--primitive-neutral-5) / <alpha-value>);
+  --color-popover: rgb(var(--primitive-neutral-5) / <alpha-value>);
+  --color-muted: rgb(var(--primitive-neutral-10) / <alpha-value>);
+
+  --color-foreground: rgb(var(--primitive-neutral-100) / <alpha-value>);
+  --color-foreground-secondary: rgb(var(--primitive-neutral-80) / <alpha-value>);
+  --color-foreground-tertiary: rgb(var(--primitive-neutral-60) / <alpha-value>);
+  --color-icon: rgb(var(--primitive-neutral-50) / <alpha-value>);
+  --color-muted-foreground: rgb(var(--primitive-neutral-30) / <alpha-value>);
+
+  --color-border: rgb(var(--primitive-neutral-20) / <alpha-value>);
+  --color-input: rgb(var(--primitive-neutral-20) / <alpha-value>);
+  --color-ring: rgb(var(--primitive-neutral-30) / <alpha-value>);
+
+  --color-destructive: rgb(var(--primitive-red) / <alpha-value>);
+  --color-success: rgb(var(--primitive-teal) / <alpha-value>);
+  --color-warning: rgb(var(--primitive-amber) / <alpha-value>);
+
   /* Spacing — overrides Tailwind defaults with design system scale */
   --spacing-0: 0rem;
   --spacing-2: 0.14285714285714285rem;
@@ -136,4 +161,76 @@ html {
   --radius-24: 1.7142857142857142rem;
   --radius-full: 9999rem;
 
+}
+
+/* ─── Text styles ─────────────────────────────────────────────────────── */
+/* Each utility bundles font-family + size + weight + line-height as one
+   Figma text style. Two parallel tracks, not variants of each other:
+   Geist Sans for standard UI text, Geist Pixel for decorative/retro chrome. */
+
+@utility text-timer-sm {
+  font-family: var(--font-dseg7);
+  font-size: 1.4285714285714286rem; /* 20px */
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: -0.01em; /* -1% */
+}
+
+@utility text-timer-lg {
+  font-family: var(--font-dseg7);
+  font-size: 5.714285714285714rem; /* 80px */
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: -0.02em; /* -2% */
+}
+
+@utility text-body {
+  font-family: var(--font-geist);
+  font-size: 1rem; /* 14px */
+  font-weight: 400;
+  line-height: normal;
+}
+
+@utility text-interactive {
+  font-family: var(--font-geist);
+  font-size: 1rem; /* 14px */
+  font-weight: 500;
+  line-height: normal;
+}
+
+@utility text-group-title {
+  font-family: var(--font-geist);
+  font-size: 0.8571428571428571rem; /* 12px */
+  font-weight: 600;
+  line-height: normal;
+}
+
+@utility text-pixel-stat {
+  font-family: var(--font-pixel-grid);
+  font-size: 5.714285714285714rem; /* 80px */
+  font-weight: 500;
+  line-height: normal;
+  letter-spacing: -0.02em; /* -2% */
+}
+
+@utility text-pixel-heading {
+  font-family: var(--font-pixel-circle);
+  font-size: 1.7142857142857142rem; /* 24px */
+  font-weight: 500;
+  line-height: normal;
+  letter-spacing: -0.01em; /* -1% */
+}
+
+@utility text-pixel-base {
+  font-family: var(--font-pixel-circle);
+  font-size: 1rem; /* 14px */
+  font-weight: 500;
+  line-height: normal;
+}
+
+@utility text-pixel-sm {
+  font-family: var(--font-pixel-circle);
+  font-size: 0.8571428571428571rem; /* 12px */
+  font-weight: 500;
+  line-height: normal;
 }
