@@ -95,24 +95,24 @@ html {
      of surface. Same reasoning for skipping primary/secondary and the
      status -foreground pairs (destructive/success/warning) — compose
      those at the call site with bg-background/text-background instead. */
-  --color-background: rgb(var(--primitive-neutral-0) / <alpha-value>);
-  --color-card: rgb(var(--primitive-neutral-5) / <alpha-value>);
-  --color-popover: rgb(var(--primitive-neutral-5) / <alpha-value>);
-  --color-muted: rgb(var(--primitive-neutral-10) / <alpha-value>);
+  --color-background: rgb(var(--primitive-neutral-0));
+  --color-card: rgb(var(--primitive-neutral-5));
+  --color-popover: rgb(var(--primitive-neutral-5));
+  --color-muted: rgb(var(--primitive-neutral-10));
 
-  --color-foreground: rgb(var(--primitive-neutral-100) / <alpha-value>);
-  --color-foreground-secondary: rgb(var(--primitive-neutral-80) / <alpha-value>);
-  --color-foreground-tertiary: rgb(var(--primitive-neutral-60) / <alpha-value>);
-  --color-icon: rgb(var(--primitive-neutral-50) / <alpha-value>);
-  --color-muted-foreground: rgb(var(--primitive-neutral-30) / <alpha-value>);
+  --color-foreground: rgb(var(--primitive-neutral-100));
+  --color-foreground-secondary: rgb(var(--primitive-neutral-80));
+  --color-foreground-tertiary: rgb(var(--primitive-neutral-60));
+  --color-icon: rgb(var(--primitive-neutral-50));
+  --color-muted-foreground: rgb(var(--primitive-neutral-30));
 
-  --color-border: rgb(var(--primitive-neutral-20) / <alpha-value>);
-  --color-input: rgb(var(--primitive-neutral-20) / <alpha-value>);
-  --color-ring: rgb(var(--primitive-neutral-30) / <alpha-value>);
+  --color-border: rgb(var(--primitive-neutral-20));
+  --color-input: rgb(var(--primitive-neutral-20));
+  --color-ring: rgb(var(--primitive-neutral-30));
 
-  --color-destructive: rgb(var(--primitive-red) / <alpha-value>);
-  --color-success: rgb(var(--primitive-teal) / <alpha-value>);
-  --color-warning: rgb(var(--primitive-amber) / <alpha-value>);
+  --color-destructive: rgb(var(--primitive-red));
+  --color-success: rgb(var(--primitive-teal));
+  --color-warning: rgb(var(--primitive-amber));
 
   /* Spacing — overrides Tailwind defaults with design system scale */
   --spacing-0: 0rem;
@@ -148,6 +148,7 @@ html {
   --shadow-sm: 0px 1px 2px 1px rgba(0, 0, 0, 0.03);
   --shadow-md: 0px 2px 4px 1px rgba(0, 0, 0, 0.06);
   --shadow-focus: 0px 0px 3px 1px rgb(var(--primitive-neutral-30) / 0.80);
+  --inset-shadow-button: 2px 3px 10px 1px rgb(var(--primitive-neutral-0) / 0.40);
 
   /* Border radius */
   --radius-0: 0rem;
@@ -161,6 +162,18 @@ html {
   --radius-24: 1.7142857142857142rem;
   --radius-full: 9999rem;
 
+}
+
+/* ─── Surface treatments ─────────────────────────────────────────────── */
+/* Multi-stop values that must move together — bundled into one class so
+   usages don't drift out of sync across buttons/screens. */
+
+@utility bg-button-shade {
+  background-image: linear-gradient(
+    to bottom,
+    rgb(var(--primitive-neutral-80) / 0.7),
+    rgb(var(--primitive-neutral-80) / 0.5)
+  );
 }
 
 /* ─── Text styles ─────────────────────────────────────────────────────── */

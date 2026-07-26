@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Today from './pages/Today'
 import Later from './pages/Later'
 import History from './pages/History'
+import { NavbarButtonGroup } from './components/navbar/navbar-button-group'
 
 type Tab = 'today' | 'later' | 'history'
 
@@ -16,6 +17,9 @@ export default function App() {
 
   return (
     <div style={{ backgroundColor: '#ffffff', minHeight: '100vh', color: '#171414' }}>
+      <div style={{ padding: 24, background: '#fff' }}>
+        <NavbarButtonGroup dateLabel="Today" onDateClick={() => {}} onNewTaskClick={() => {}} />
+      </div>
       <nav style={{ borderBottom: '1px solid #e5e4e7', display: 'flex', justifyContent: 'center' }}>
         {tabs.map((tab) => (
           <button
