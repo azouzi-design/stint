@@ -2,47 +2,34 @@ import { useState } from 'react'
 import Today from './pages/Today'
 import Later from './pages/Later'
 import History from './pages/History'
-import { NavbarButtonGroup } from './components/navbar/navbar-button-group'
+import Playground from './pages/Playground'
+import { NavigationLink } from './components/navbar/navigation-link'
 
-type Tab = 'today' | 'later' | 'history'
+type Tab = 'today' | 'later' | 'history' | 'playground'
 
 const tabs: { id: Tab; label: string }[] = [
-  { id: 'today', label: 'Today' },
-  { id: 'later', label: 'Later' },
-  { id: 'history', label: 'History' },
+  { id: 'today', label: 'Today,' },
+  { id: 'later', label: 'Later,' },
+  { id: 'history', label: 'History,' },
+  ...(import.meta.env.DEV ? [{ id: 'playground' as const, label: 'Playground,' }] : []),
 ]
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('today')
 
   return (
-    <div style={{ backgroundColor: '#ffffff', minHeight: '100vh', color: '#171414' }}>
-      <div style={{ padding: 24, background: '#fff' }}>
-        <NavbarButtonGroup dateLabel="Today" onDateClick={() => {}} onNewTaskClick={() => {}} />
-      </div>
-      <nav style={{ borderBottom: '1px solid #e5e4e7', display: 'flex', justifyContent: 'center' }}>
+    <div className="min-h-screen bg-background text-foreground">
+      <nav className="flex justify-center gap-12 border-b border-border py-12">
         {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            style={{
-              padding: '12px 24px',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '15px',
-              color: activeTab === tab.id ? '#171414' : '#565151',
-              borderBottom: activeTab === tab.id ? '2px solid #171414' : '2px solid transparent',
-              marginBottom: '-1px',
-            }}
-          >
+          <NavigationLink key={tab.id} isActive={activeTab === tab.id} onClick={() => setActiveTab(tab.id)}>
             {tab.label}
-          </button>
+          </NavigationLink>
         ))}
       </nav>
       {activeTab === 'today' && <Today />}
       {activeTab === 'later' && <Later />}
       {activeTab === 'history' && <History />}
+      {activeTab === 'playground' && <Playground />}
     </div>
   )
 }
