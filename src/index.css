@@ -148,7 +148,7 @@ html {
   --shadow-sm: 0px 1px 2px 1px rgba(0, 0, 0, 0.03);
   --shadow-md: 0px 2px 4px 1px rgba(0, 0, 0, 0.06);
   --shadow-focus: 0px 0px 3px 1px rgb(var(--primitive-neutral-30) / 0.80);
-  --inset-shadow-button: 2px 3px 10px 1px rgb(var(--primitive-neutral-0) / 0.40);
+  --inset-shadow-button: inset 2px 3px 10px 1px rgb(var(--primitive-neutral-0) / 0.40);
 
   /* Border radius */
   --radius-0: 0rem;
