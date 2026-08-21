@@ -25,6 +25,13 @@ A productivity web app for real users.
 - No Supabase auth — the client is initialized with the anon key and used purely for DB reads/writes.
 - All database column names use snake_case.
 
+## Icons (Figma → code)
+- All icons come from the `pixelarticons` package (`node_modules/pixelarticons/svg/`), imported like:
+  `import CheckIcon from 'pixelarticons/svg/check.svg?react'`
+- In Figma, each icon is its own component, named exactly after its pixelarticons kebab-case filename (e.g. a component named `human-arms-down` corresponds to `pixelarticons/svg/human-arms-down.svg`).
+- When implementing a design from Figma: if a layer/component name matches a file in `node_modules/pixelarticons/svg/`, import that icon from the package — do NOT hand-draw the SVG markup from the Figma node, even if it would visually match.
+- Only fall back to generating markup if no matching filename exists in `pixelarticons/svg/`.
+
 ## Full spec
 See `docs/SPEC.md` for the complete product specification.
 See `docs/schema.sql` for the database schema.
