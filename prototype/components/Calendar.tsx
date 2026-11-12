@@ -2,7 +2,8 @@ import { useMemo, useRef, useState } from 'react'
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   pointerWithin,
   rectIntersection,
   useSensor,
@@ -15,14 +16,63 @@ import {
 } from '@dnd-kit/core'
 import { isSameDay, isSameMonth } from 'date-fns'
 import { dayKey, monthKey, monthWeeks, weekKey } from '../lib/dates'
-import { canHold, groupByContainer, useStore } from '../store'
-import type { Item, Section } from '../types'
-import { DayCell, MonthRow, WeekCell, type SectionCells } from './Cells'
+import { markDragEnd, openRowMenu } from '../lib/touchMenu'
+import { useIsMobile } from '../lib/useMedia'
+import { canHold, useStore } from '../store'
+import type { Item } from '../types'
+import { useLists } from '../lib/lists'
+import { DayCell, MonthRow, WeekCell } from './Cells'
 import { RowView } from './ItemRow'
+import { WeekPager } from './WeekView'
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 const GRID = 'grid grid-cols-8'
-const EMPTY: Item[] = []
+
+/** Desktop: the month grid. Mobile: one week at a time, swiped. */
+export function Calendar() {
+  const mobile = useIsMobile()
+  return <DragAndDrop>{mobile ? <WeekPager /> : <MonthGrid />}</DragAndDrop>
+}
+
+function MonthGrid() {
+  const month = useStore((s) => s.viewMonth)
+  const weeks = useMemo(() => monthWeeks(month), [month])
+  const { get, sections } = useLists()
+  const today = new Date()
+
+  return (
+    <div className="min-w-[68rem]">
+      {/* Column headers */}
+      <div className={`${GRID} sticky top-48 z-10 border-b border-neutral-30 bg-background`}>
+        {[...WEEKDAYS, 'Weekly'].map((d) => (
+          <div key={d} className="flex h-32 items-center px-6 text-group-title text-foreground-tertiary">
+            {d}
+          </div>
+        ))}
+      </div>
+
+      {weeks.map((days) => (
+        <div key={days[0].toISOString()} className={`${GRID} border-b border-neutral-30`}>
+          {days.map((d) => (
+            <DayCell
+              key={d.toISOString()}
+              container={dayKey(d)}
+              date={d}
+              inMonth={isSameMonth(d, month)}
+              isToday={isSameDay(d, today)}
+              items={get(dayKey(d))}
+            />
+          ))}
+          <WeekCell monday={days[0]} cells={sections((s) => weekKey(days[0], s))} />
+        </div>
+      ))}
+
+      <MonthRow month={month} cells={sections((s) => monthKey(month, s))} />
+    </div>
+  )
+}
+
+// ─── Drag & drop ───────────────────────────────────────────────────────
 
 // Prefer the row under the pointer; fall back to the list (container) under it.
 const collision: CollisionDetection = (args) => {
@@ -50,37 +100,39 @@ function dropTarget({ active, over }: DragMoveEvent, pointerY: number): { contai
   return { container: target.container, index: rest.findIndex((i) => i.id === overId) + (below ? 1 : 0) }
 }
 
+const touchPoint = (e: Event) => {
+  const t = 'touches' in e ? (e as TouchEvent).touches[0] ?? (e as TouchEvent).changedTouches[0] : null
+  return t ? { x: t.clientX, y: t.clientY } : null
+}
 
-export function Calendar() {
-  const items = useStore((s) => s.items)
-  const month = useStore((s) => s.viewMonth)
-  const byContainer = useMemo(() => groupByContainer(items), [items])
-  const weeks = useMemo(() => monthWeeks(month), [month])
-  const today = new Date()
-  const get = (key: string) => byContainer.get(key) ?? EMPTY
-  const sections = (keyFor: (s: Section) => string): SectionCells => {
-    const cell = (s: Section) => ({ container: keyFor(s), items: get(keyFor(s)) })
-    return { goals: cell('goals'), notes: cell('notes'), backlog: cell('backlog') }
-  }
-
-  // ─── Drag & drop ───
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
+function DragAndDrop({ children }: { children: React.ReactNode }) {
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    // Touch: press and hold to lift a row; a quick swipe still scrolls the page / the week pager.
+    useSensor(TouchSensor, { activationConstraint: { delay: 300, tolerance: 6 } }),
+  )
   const [dragged, setDragged] = useState<{ item: Item; width: number } | null>(null)
   const origin = useRef<{ container: string; index: number } | null>(null)
   const pointerY = useRef(0)
-  const trackPointer = (e: PointerEvent) => (pointerY.current = e.clientY)
+  // Stable listeners (added on drag start, removed on drag end — a later render).
+  const [track] = useState(() => ({
+    pointer: (e: PointerEvent) => (pointerY.current = e.clientY),
+    touch: (e: TouchEvent) => (pointerY.current = e.touches[0]?.clientY ?? pointerY.current),
+  }))
 
   /** Container under the drop point (a row's list, or an empty list area). */
   const overContainer = (overId: string) =>
     overId.startsWith('drop:') ? overId.slice(5) : useStore.getState().items.find((i) => i.id === overId)?.container
 
-  function onDragStart({ active }: DragStartEvent) {
+  function onDragStart({ active, activatorEvent }: DragStartEvent) {
     const s = useStore.getState()
     const item = s.items.find((i) => i.id === active.id)
     if (!item) return
     s.stopEditing()
     origin.current = { container: item.container, index: item.order }
-    window.addEventListener('pointermove', trackPointer)
+    pointerY.current = touchPoint(activatorEvent)?.y ?? (activatorEvent as MouseEvent).clientY
+    window.addEventListener('pointermove', track.pointer)
+    window.addEventListener('touchmove', track.touch)
     setDragged({ item, width: active.rect.current.initial?.width ?? 160 })
   }
 
@@ -100,6 +152,15 @@ export function Calendar() {
     const s = useStore.getState()
     const id = String(e.active.id)
     const item = s.items.find((i) => i.id === id)
+    // Touch long-press released without moving: the row's menu, not a drop.
+    const touch = touchPoint(e.activatorEvent)
+    if (touch) markDragEnd()
+    if (touch && Math.hypot(e.delta.x, e.delta.y) < 8 && origin.current) {
+      s.moveItem(id, origin.current.container, origin.current.index)
+      endDrag()
+      setTimeout(() => openRowMenu(id, touch.x, touch.y))
+      return
+    }
     const dropIn = e.over ? overContainer(String(e.over.id)) : undefined
     if (item && dropIn && canHold(item, dropIn)) s.adaptToContainer(id) // e.g. a goal dropped into a day becomes a task
     else if (origin.current) s.moveItem(id, origin.current.container, origin.current.index) // not droppable there: put it back
@@ -112,7 +173,8 @@ export function Calendar() {
   }
 
   function endDrag() {
-    window.removeEventListener('pointermove', trackPointer)
+    window.removeEventListener('pointermove', track.pointer)
+    window.removeEventListener('touchmove', track.touch)
     origin.current = null
     setDragged(null)
   }
@@ -126,36 +188,10 @@ export function Calendar() {
       onDragEnd={onDragEnd}
       onDragCancel={onDragCancel}
       measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+      // Never auto-scroll the week pager sideways mid-drag (it would switch weeks under the finger).
+      autoScroll={{ canScroll: (el) => !(el instanceof HTMLElement && 'weekPager' in el.dataset) }}
     >
-      <div className="min-w-[68rem]">
-        {/* Column headers */}
-        <div className={`${GRID} sticky top-48 z-10 border-b border-neutral-30 bg-background`}>
-          {[...WEEKDAYS, 'Weekly'].map((d) => (
-            <div key={d} className="flex h-32 items-center px-6 text-group-title text-foreground-tertiary">
-              {d}
-            </div>
-          ))}
-        </div>
-
-        {weeks.map((days) => (
-          <div key={days[0].toISOString()} className={`${GRID} border-b border-neutral-30`}>
-            {days.map((d) => (
-              <DayCell
-                key={d.toISOString()}
-                container={dayKey(d)}
-                date={d}
-                inMonth={isSameMonth(d, month)}
-                isToday={isSameDay(d, today)}
-                items={get(dayKey(d))}
-              />
-            ))}
-            <WeekCell monday={days[0]} cells={sections((s) => weekKey(days[0], s))} />
-          </div>
-        ))}
-
-        <MonthRow month={month} cells={sections((s) => monthKey(month, s))} />
-      </div>
-
+      {children}
       <DragOverlay dropAnimation={null}>
         {dragged && (
           <RowView

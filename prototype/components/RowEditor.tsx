@@ -125,6 +125,16 @@ export function RowEditor({ container, item, afterId, inDay, sectionMode }: Prop
     },
   })
 
+  // A blur caused by this editor unmounting isn't the user leaving the row. (On touch devices TipTap
+  // focuses synchronously, so StrictMode's dev-only unmount/remount would otherwise close the row.)
+  const mounted = useRef(false)
+  useLayoutEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
+
   // Focus synchronously once the editor's DOM is attached, so keystrokes typed
   // right after Enter land in the new row instead of being lost.
   useLayoutEffect(() => {
@@ -275,6 +285,7 @@ export function RowEditor({ container, item, afterId, inDay, sectionMode }: Prop
   })
 
   function onBlur(e: React.FocusEvent) {
+    if (!mounted.current) return
     const to = e.relatedTarget as HTMLElement | null
     // The popover is checked by attribute, not ref: an input that autofocuses while the
     // popover mounts receives focus before the popover's ref is attached.

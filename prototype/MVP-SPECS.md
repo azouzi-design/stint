@@ -16,11 +16,11 @@ Work happens on the `prototype` branch. Each step is committed after review.
   - [x] 8. Right-click menu + keyboard copy / cut / paste
   - [x] 9. Drag & drop + time sorting
   - [x] 10. Routines recurrence
-- [ ] **Part 4: Focus sessions** *(built, in review)*
+- [x] **Part 4: Focus sessions**
   - [x] 11. Session flow (start, navbar counter, pause / stop / extend, end alert)
   - [x] 12. Pop-out timer
-- [ ] **Part 5: Mobile**
-  - [ ] 13. Weekly view
+- [x] **Part 5: Mobile**
+  - [x] 13. Weekly view
 
 ## Purpose
 An interactive front-end for testing, playing with, and defining what the product should eventually be.
@@ -56,8 +56,14 @@ An interactive front-end for testing, playing with, and defining what the produc
 - Days outside the current month are greyed out.
 
 ### Calendar (mobile: week)
-- The user moves between weeks by swiping or with arrows.
+- Below 768px wide. The user moves between weeks by swiping or with arrows.
 - The weekly cell sits below the 7 days, and the monthly cell at the bottom.
+- **Navbar (two rows):** logomark + start / session controls + menu on top; the week (`Nov 9 – 15`, `W46`), Today and the arrows below.
+- **Days are stacked** top to bottom, Monday → Sunday. Each day shows all its items (no inner scroll; the page scrolls) and at least 3 rows.
+- **Monthly cell:** the month the week belongs to: the one holding its Thursday (today's week always shows today's month).
+- **Swipe:** native horizontal scroll-snap. While swiping, the previous / next week is visible (read-only) beside the current one.
+- **Touch gestures:** tap a row to edit it. Press and hold lifts it: move to drag it, or release without moving to open the row menu (copy / cut / paste / clear / project / repeat).
+- No pop-out timer on phones (the API is desktop-only); the navbar counter, tab title and alert still work.
 
 ### Day layout (list view)
 A day is a vertical list of rows, and any row can hold any item type.

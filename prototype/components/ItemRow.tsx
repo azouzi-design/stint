@@ -9,6 +9,7 @@ import { clock, formatDuration, isoMinutes, timeframeMinutes } from '../lib/date
 import { DELETED_PROJECT_COLOR, PROJECT_COLORS } from '../lib/projects'
 import { useShallow } from 'zustand/react/shallow'
 import { sessionClock } from '../lib/session'
+import { justDragged, touchMenuGuard } from '../lib/touchMenu'
 import { useNow } from '../lib/useNow'
 import { canPasteInto, isRepeating, useStore } from '../store'
 import type { Item } from '../types'
@@ -17,7 +18,7 @@ import { RichText } from './RichText'
 
 export const ROW_H = 'h-24' // 24px — shared by filled, empty, and editing rows
 
-const rowBase = cn(ROW_H, 'flex items-center gap-6 border-b border-border px-6 text-[0.857rem] leading-none')
+const rowBase = cn(ROW_H, 'row flex items-center gap-6 border-b border-border px-6 text-[0.857rem] leading-none')
 export const popoverClass = 'z-40 rounded-8 border border-border bg-popover p-4 text-[0.857rem] shadow-md'
 
 // ─── Empty row ─────────────────────────────────────────────────────────
@@ -28,6 +29,11 @@ export function EmptyRow({ container, onClick }: { container: string; onClick: (
       <div className={cn(rowBase, 'cursor-text hover:bg-neutral-5')} onClick={onClick} />
     </RowMenu>
   )
+}
+
+/** An empty row in a static preview (no menu, no click). */
+export function StaticEmptyRow() {
+  return <div className={rowBase} />
 }
 
 // ─── Item row (sortable, right-click menu, project picker) ─────────────
@@ -52,8 +58,9 @@ export function ItemRow({ item }: { item: Item }) {
             {...listeners}
             role={undefined}
             tabIndex={-1}
+            data-item-id={item.id}
             className={cn(rowBase, 'bg-muted', editable && 'cursor-text', isDragging && 'opacity-30')}
-            onClick={editable ? () => startEditing({ container: item.container, id: item.id, afterId: null }) : undefined}
+            onClick={editable ? () => !justDragged() && startEditing({ container: item.container, id: item.id, afterId: null }) : undefined}
           >
             <RowContent item={item} />
           </div>
@@ -112,7 +119,10 @@ function RowMenu({ container, item, children }: { container: string; item?: Item
 
   return (
     <ContextMenu.Root>
-      <ContextMenu.Trigger asChild>{children}</ContextMenu.Trigger>
+      {/* Item rows: on touch, long-press is the drag; releasing without moving opens this menu (see touchMenu). */}
+      <ContextMenu.Trigger asChild {...(item ? touchMenuGuard : {})}>
+        {children}
+      </ContextMenu.Trigger>
       <ContextMenu.Portal>
         <ContextMenu.Content
           className={cn(popoverClass, 'min-w-[11rem]')}

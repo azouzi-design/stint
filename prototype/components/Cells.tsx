@@ -1,11 +1,13 @@
+import { useContext } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext } from '@dnd-kit/sortable'
 import { format, getISOWeek } from 'date-fns'
 import { cn } from '@/lib/utils'
 import type { EditMode } from '../lib/parse'
+import { PreviewContext, SECTION_LABEL, SECTIONS, type SectionCells } from '../lib/lists'
 import { useStore } from '../store'
 import type { Item, Section } from '../types'
-import { EmptyRow, ItemRow } from './ItemRow'
+import { EmptyRow, ItemRow, RowView, StaticEmptyRow } from './ItemRow'
 import { RowEditor } from './RowEditor'
 import { noShift } from './dnd'
 
@@ -26,7 +28,24 @@ interface RowListProps {
   sectionMode?: EditMode
 }
 
-function RowList({ container, items, min = 0, inDay = false, sectionMode }: RowListProps) {
+export function RowList(props: RowListProps) {
+  return useContext(PreviewContext) ? <StaticRowList {...props} /> : <LiveRowList {...props} />
+}
+
+function StaticRowList({ items, min = 0 }: RowListProps) {
+  return (
+    <div>
+      {items.map((item) => (
+        <RowView key={item.id} item={item} />
+      ))}
+      {Array.from({ length: Math.max(min - items.length, 1) }, (_, i) => (
+        <StaticEmptyRow key={`empty-${i}`} />
+      ))}
+    </div>
+  )
+}
+
+function LiveRowList({ container, items, min = 0, inDay = false, sectionMode }: RowListProps) {
   const editing = useStore((s) => (s.editing?.container === container ? s.editing : null))
   const startEditing = useStore((s) => s.startEditing)
   const editorProps = { container, inDay, sectionMode }
@@ -101,13 +120,9 @@ export function DayCell({
   )
 }
 
-const SECTION_LABEL: Record<Section, string> = { goals: 'Goals', notes: 'Notes', backlog: 'Backlog' }
-const SECTIONS: Section[] = ['goals', 'notes', 'backlog']
 const SECTION_MODE: Record<Section, EditMode> = { goals: 'goal', notes: 'note', backlog: 'task' }
 
-export type SectionCells = Record<Section, { container: string; items: Item[] }>
-
-function SectionBlock({ section, label, cell, min }: { section: Section; label: string; cell: SectionCells[Section]; min?: number }) {
+export function SectionBlock({ section, label, cell, min }: { section: Section; label: string; cell: SectionCells[Section]; min?: number }) {
   return (
     <section>
       <h3 className="flex h-24 items-end px-6 pb-4 text-[0.786rem] font-medium text-foreground-tertiary">{label}</h3>

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { addDays, addMonths, format, parseISO, startOfMonth } from 'date-fns'
-import { dayKey, monthWeeks } from './lib/dates'
+import { addDays, addMonths, addWeeks, format, isSameMonth, parseISO, startOfMonth } from 'date-fns'
+import { dayKey, monthForWeek, monthWeeks, mondayOf, weekInMonth } from './lib/dates'
 import { plainText } from './lib/rich'
 import { containerDate, ruleDates } from './lib/routines'
 import { buildSeed, SEED_PROJECTS, seedRules } from './seed'
@@ -16,6 +16,10 @@ interface State {
   /** First day of the month being viewed. Not persisted: always opens on today. */
   viewMonth: Date
   shiftMonth: (delta: number) => void
+  /** Monday of the week being viewed (mobile). Kept in sync with viewMonth, which always overlaps it:
+   *  today's week ↔ today's month; any other week ↔ the month holding its Thursday. */
+  viewWeek: Date
+  shiftWeek: (delta: number) => void
   goToToday: () => void
   resetToSample: () => void
 
@@ -133,9 +137,10 @@ function fieldsOf(i: Item): ItemFields {
   return fields as ItemFields
 }
 
+/** Days routines are generated for: the month grid, plus a week either side (the mobile swipe previews). */
 const viewRange = (month: Date) => {
   const weeks = monthWeeks(month)
-  return { from: weeks[0][0], to: weeks[weeks.length - 1][6] }
+  return { from: addDays(weeks[0][0], -7), to: addDays(weeks[weeks.length - 1][6], 7) }
 }
 
 /** Items with any missing routine copies for [from, to] added at the top of their day. */
@@ -184,11 +189,23 @@ export const useStore = create<State>()(
 
       viewMonth: startOfMonth(new Date()),
       shiftMonth: (delta) => {
-        set((s) => ({ viewMonth: addMonths(s.viewMonth, delta), editing: null }))
+        set((s) => {
+          const viewMonth = addMonths(s.viewMonth, delta)
+          const viewWeek = isSameMonth(viewMonth, new Date()) ? mondayOf(new Date()) : weekInMonth(viewMonth)
+          return { viewMonth, viewWeek, editing: null }
+        })
+        get().ensureRoutines()
+      },
+      viewWeek: mondayOf(new Date()),
+      shiftWeek: (delta) => {
+        set((s) => {
+          const viewWeek = addWeeks(s.viewWeek, delta)
+          return { viewWeek, viewMonth: monthForWeek(viewWeek), editing: null }
+        })
         get().ensureRoutines()
       },
       goToToday: () => {
-        set({ viewMonth: startOfMonth(new Date()), editing: null })
+        set({ viewMonth: startOfMonth(new Date()), viewWeek: mondayOf(new Date()), editing: null })
         get().ensureRoutines()
       },
       resetToSample: () => {

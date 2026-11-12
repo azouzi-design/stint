@@ -107,7 +107,7 @@ export function ProjectPicker({ value, initialQuery = '', onPick, onCancel }: Pr
                     e.stopPropagation()
                     setForm({ id: o.project.id, name: o.project.name, color: o.project.color })
                   }}
-                  className="invisible -mr-4 flex size-20 items-center justify-center rounded-4 text-icon group-hover:visible hover:bg-neutral-20 hover:text-foreground"
+                  className="invisible -mr-4 flex size-20 items-center justify-center rounded-4 text-icon group-hover:visible hover:bg-neutral-20 hover:text-foreground [@media(hover:none)]:visible"
                 >
                   <PencilIcon className="size-12" />
                 </button>

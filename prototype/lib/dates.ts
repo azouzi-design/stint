@@ -4,8 +4,10 @@ import {
   eachWeekOfInterval,
   endOfMonth,
   format,
+  isSameMonth,
   parseISO,
   startOfMonth,
+  startOfWeek,
 } from 'date-fns'
 import type { ContainerKey, Section } from '../types'
 
@@ -16,6 +18,23 @@ export function monthWeeks(month: Date): Date[][] {
   return eachWeekOfInterval({ start: startOfMonth(month), end: endOfMonth(month) }, WEEK).map(
     (monday) => Array.from({ length: 7 }, (_, i) => addDays(monday, i)),
   )
+}
+
+export const mondayOf = (d: Date) => startOfWeek(d, WEEK)
+/** The month a week belongs to: the one holding its Thursday (so most of its days). */
+export const monthOfWeek = (monday: Date) => startOfMonth(addDays(monday, 3))
+/** Month shown with a week on mobile: today's month for this week, otherwise the Thursday rule. */
+export const monthForWeek = (monday: Date) =>
+  mondayOf(new Date()).getTime() === monday.getTime() ? startOfMonth(new Date()) : monthOfWeek(monday)
+/** First week that belongs to the month. */
+export const weekInMonth = (month: Date) => mondayOf(addDays(startOfMonth(month), 3))
+
+/** "Nov 10 – 16", "Oct 27 – Nov 2" */
+export function weekLabel(monday: Date): string {
+  const sunday = addDays(monday, 6)
+  return isSameMonth(monday, sunday)
+    ? `${format(monday, 'MMM d')} – ${format(sunday, 'd')}`
+    : `${format(monday, 'MMM d')} – ${format(sunday, 'MMM d')}`
 }
 
 export const dayKey = (d: Date): ContainerKey => `day:${format(d, 'yyyy-MM-dd')}`
