@@ -2,14 +2,13 @@
 // current, and next month relative to today. Deterministic per date, so a
 // reset produces the same calendar.
 import {
+  addDays,
   addMonths,
   eachDayOfInterval,
   endOfMonth,
   format,
-  getDate,
   isBefore,
   isSameDay,
-  isSunday,
   isWeekend,
   set,
   startOfDay,
@@ -17,7 +16,8 @@ import {
   startOfWeek,
 } from 'date-fns'
 import { dayKey, isoMinutes, monthKey, timeframeMinutes, weekKey } from './lib/dates'
-import type { Item, Project } from './types'
+import { ruleDates } from './lib/routines'
+import type { Item, Project, RoutineRule } from './types'
 
 export const SEED_PROJECTS: Project[] = [
   { id: 'p-portfolio', name: 'Portfolio', color: 'blue', deleted: false },
@@ -77,6 +77,17 @@ function rng(seed: string) {
   }
 }
 
+export function seedRules(now = new Date()): RoutineRule[] {
+  const from = startOfMonth(addMonths(now, -1))
+  const firstSunday = addDays(from, (7 - from.getDay()) % 7)
+  const ymd = (d: Date) => format(d, 'yyyy-MM-dd')
+  return [
+    { id: 'r-reading', text: 'Morning reading', repeat: 'daily', projectId: 'p-health', start: ymd(from), end: null, skip: [] },
+    { id: 'r-review', text: 'Weekly review', repeat: 'weekly', projectId: null, start: ymd(firstSunday), end: null, skip: [] },
+    { id: 'r-rent', text: 'Pay rent', repeat: 'monthly', projectId: 'p-admin', start: ymd(from), end: null, skip: [] },
+  ]
+}
+
 export function buildSeed(now = new Date()): Item[] {
   const items: Item[] = []
   let n = 0
@@ -84,6 +95,7 @@ export function buildSeed(now = new Date()): Item[] {
   const today = startOfDay(now)
   const from = startOfMonth(addMonths(now, -1))
   const to = endOfMonth(addMonths(now, 1))
+  const rules = seedRules(now)
 
   for (const day of eachDayOfInterval({ start: from, end: to })) {
     const r = rng(format(day, 'yyyy-MM-dd'))
@@ -96,12 +108,13 @@ export function buildSeed(now = new Date()): Item[] {
     let order = 0
     const base = () => ({ id: id(), container, order: order++ })
 
-    // Routines
-    dayItems.push({ ...base(), type: 'routine', text: 'Morning reading', done: isPast || (isToday && r() > 0.3), repeat: 'daily', projectId: 'p-health' })
-    if (isSunday(day))
-      dayItems.push({ ...base(), type: 'routine', text: 'Weekly review', done: isPast, repeat: 'weekly', projectId: null })
-    if (getDate(day) === 1)
-      dayItems.push({ ...base(), type: 'routine', text: 'Pay rent', done: isPast, repeat: 'monthly', projectId: 'p-admin' })
+    // Routine copies for the seeded range (later dates are generated from the rules)
+    const ymd = format(day, 'yyyy-MM-dd')
+    for (const rule of rules) {
+      if (!ruleDates(rule, day, day).length) continue
+      const done = isPast || (isToday && rule.repeat === 'daily' && r() > 0.3)
+      dayItems.push({ ...base(), type: 'routine', text: rule.text, done, repeat: rule.repeat, projectId: rule.projectId, ruleId: rule.id, ruleDate: ymd })
+    }
 
     // Focus sessions (past days and earlier today only)
     if ((isPast || isToday) && !isWeekend(day)) {

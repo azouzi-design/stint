@@ -6,16 +6,16 @@ Work happens on the `prototype` branch. Each step is committed after review.
 - [x] **Part 1: The calendar you can look at**
   - [x] 1. Calendar grid, navbar shell, month navigation
   - [x] 2. Item model, localStorage persistence, sample data, every item type rendered (read-only)
-- [ ] **Part 2: Writing in it** *(built, in review)*
+- [x] **Part 2: Writing in it**
   - [x] 3. Typing in rows (TipTap, placeholder hint, Enter / Backspace, checking off)
   - [x] 4. `/` type picker + event shortcut
   - [x] 5. Inline links
   - [x] 6. Weekly / monthly sections behavior
-- [ ] **Part 3: Organizing**
-  - [ ] 7. Projects
-  - [ ] 8. Right-click menu + keyboard copy / cut / paste
-  - [ ] 9. Drag & drop + time sorting
-  - [ ] 10. Routines recurrence
+- [ ] **Part 3: Organizing** *(built, in review)*
+  - [x] 7. Projects
+  - [x] 8. Right-click menu + keyboard copy / cut / paste
+  - [x] 9. Drag & drop + time sorting
+  - [x] 10. Routines recurrence
 - [ ] **Part 4: Focus sessions**
   - [ ] 11. Session flow (start, navbar counter, pause / stop / extend, end alert)
   - [ ] 12. Pop-out timer
@@ -84,7 +84,16 @@ The goal is to keep the speed and density of the spreadsheet while adding struct
 | **Focus session** | States: `active` (running now) or `finished`. Cannot be scheduled ahead of time; sessions only exist once started. Can be paused, extended, and stopped early. There's no separate name: a session is labeled automatically by its timeframe and duration, e.g. `5:00–6:30 / 1.5h`. |
 | **Note** | Free text |
 | **Event** | Title, timeframe (`5:00–5:30`), link. The duration is calculated from the timeframe. The link opens in one click, so the user can join the meeting as it starts. |
-| **Routine** | A task that repeats daily, weekly, or monthly. Each copy is checked off separately. The user can turn it off from any copy. Shown as a task with a repeat icon. |
+| **Routine** | A task that repeats daily, weekly, or monthly. Each copy is checked off separately. The user can turn it off from any copy. Shown as a task with a repeat icon. See **Routines** below. |
+
+### Routines
+- Created in a day with `/routine · daily|weekly|monthly`. That day is the first copy, and it sets the weekday (weekly) or day of the month (monthly; clamped in short months).
+- Copies are generated for every month the user views, at the top of each day.
+- Editing a copy's text or project applies to that copy and all later ones (earlier copies keep their history).
+- Deleting a copy (Clear, Cut, Backspace) removes only that day; it isn't regenerated.
+- Changing a copy's repeat restarts the routine from that day with the new repeat.
+- **Stop repeating** (right-click): keeps this copy and earlier ones, removes later ones.
+- Dragging a copy to another day keeps it linked to its original date.
 
 ### Weekly / monthly cells
 Each holds three small labeled sections, stacked:
@@ -106,6 +115,10 @@ Each holds three small labeled sections, stacked:
   3. Create project: the user types the name in an input field and picks a color right there. The new project is assigned immediately.
 - **Editing:** projects are renamed, recolored, and deleted straight from that same list, in a very minimal but clear way. There's no settings page for them.
 - **Deleting:** the project's items stay. Each one keeps a **grey dot** labeled `~deleted-<projectname>`, which the user can remove from the item.
+- **Details:**
+  - `#` opens the list when typed at the start of a row or after a space; `Escape` closes it and puts the typed `#text` back as plain text.
+  - The list has a search field. Hovering a project shows a pencil to rename / recolor / delete it.
+  - "Remove project" appears when the item has one (including a deleted one).
 
 ## Interactions
 
@@ -129,10 +142,21 @@ Each holds three small labeled sections, stacked:
 ### Ordering & moving
 - **Time-bound items** (events, focus sessions) sort themselves by time by default. The user can still drag them elsewhere.
 - **Drag & drop:** anything can be dragged anywhere on the visible calendar (within a day, between days, into the weekly or monthly cells).
+  - The row moves live while dragging, leaving a faded placeholder where it will land: above or below the row under the pointer, depending on which half the pointer is over.
+  - A drop where the item can't go (a session onto a weekly cell) puts it back where it started.
+- **Time sorting:** new events (typed or via `/event`) and events whose time is edited are placed in time order among the day's other events and sessions. Dragged and pasted rows keep the position the user chose.
 - **Right-click menu on any row:** copy, cut, paste, clear. Since a month fills the whole screen, cut/paste is how items move to places outside the current view (e.g. another month).
 
+### Copy / cut / paste
+- **Right-click menu:** Copy, Cut, Paste, Clear, Project…, and "Stop repeating" on routine copies. On an empty row: Paste.
+- Cut removes the row right away; it can then be pasted anywhere, including another month.
+- Pasted rows go below the row that was right-clicked, or at the end of the list when pasted into an empty row.
+- **Types adapt to where they land** (paste and drag): a goal in a day becomes a task. In weekly / monthly sections, items become goals, notes, or tasks depending on the section. Focus sessions can't go into weekly / monthly cells.
+- Copying a routine copy pastes a plain task (only the rule creates routine copies). Cutting one moves it and keeps it a routine copy.
+
 ### Keyboard
-- `Cmd+C` / `Cmd+X` / `Cmd+V` on a selected row: copy, cut, paste.
+- `Cmd+C` / `Cmd+X` on a row being edited, with no text selected: copy / cut the whole row. With text selected, they copy / cut the text as usual.
+- `Cmd+V` in an empty row, right after copying a row: pastes the row itself. Any other clipboard content pastes as text.
 - `Enter`: create a new row below.
 - `Backspace` on an empty row: delete it.
 

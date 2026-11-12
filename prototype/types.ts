@@ -47,6 +47,21 @@ export interface RoutineItem extends BaseItem {
   text: string
   done: boolean
   repeat: Repeat
+  /** The rule this copy was generated from, and the date it was scheduled for.
+   *  The scheduled date stays the same if the copy is dragged to another day. */
+  ruleId?: string
+  ruleDate?: string // 'yyyy-MM-dd'
+}
+
+/** A repeating routine. Copies are generated per day/week/month until `end`. */
+export interface RoutineRule {
+  id: string
+  text: string
+  repeat: Repeat
+  projectId: string | null
+  start: string // 'yyyy-MM-dd' — also sets the weekday / day-of-month
+  end: string | null // last scheduled date (inclusive), null = still repeating
+  skip: string[] // scheduled dates whose copy was deleted or converted
 }
 
 export interface GoalItem extends BaseItem {
@@ -64,6 +79,14 @@ export type ItemFields = Item extends infer T
     ? Omit<T, 'id' | 'container' | 'order' | 'projectId'>
     : never
   : never
+
+/** An item copied or cut with the right-click menu / ⌘C / ⌘X. */
+export interface Clipboard {
+  fields: ItemFields
+  projectId: string | null
+  /** Plain text also written to the system clipboard, to recognise our own paste. */
+  text: string
+}
 
 /** Which row is being edited. id = existing item; id null = new row after `afterId` (null = at the end). */
 export interface Editing {

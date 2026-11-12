@@ -1,3 +1,5 @@
+import { useDroppable } from '@dnd-kit/core'
+import { SortableContext } from '@dnd-kit/sortable'
 import { format, getISOWeek } from 'date-fns'
 import { cn } from '@/lib/utils'
 import type { EditMode } from '../lib/parse'
@@ -5,6 +7,7 @@ import { useStore } from '../store'
 import type { Item, Section } from '../types'
 import { EmptyRow, ItemRow } from './ItemRow'
 import { RowEditor } from './RowEditor'
+import { noShift } from './dnd'
 
 /** Rows visible in a day before it scrolls (spreadsheet-like density). */
 export const DAY_ROWS = 10
@@ -46,14 +49,22 @@ function RowList({ container, items, min = 0, inDay = false, sectionMode }: RowL
   }
   if (draft && !draftAnchored) rows.push(draftEditor)
 
+  // The whole list (empty rows included) is a drop target; items are sortable within it.
+  const { setNodeRef, isOver } = useDroppable({ id: `drop:${container}` })
   const empties = Math.max(min - rows.length, 1)
   return (
-    <>
-      {rows}
+    <div ref={setNodeRef} className={cn(isOver && 'bg-neutral-5')}>
+      <SortableContext items={items.map((i) => i.id)} strategy={noShift}>
+        {rows}
+      </SortableContext>
       {Array.from({ length: empties }, (_, i) => (
-        <EmptyRow key={`empty-${i}`} onClick={() => startEditing({ container, id: null, afterId: null })} />
+        <EmptyRow
+          key={`empty-${i}`}
+          container={container}
+          onClick={() => startEditing({ container, id: null, afterId: null })}
+        />
       ))}
-    </>
+    </div>
   )
 }
 

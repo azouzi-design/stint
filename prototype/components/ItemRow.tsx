@@ -1,34 +1,164 @@
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { ContextMenu, Popover } from 'radix-ui'
 import CheckIcon from 'pixelarticons/svg/check.svg?react'
 import ExternalLinkIcon from 'pixelarticons/svg/external-link.svg?react'
 import RepeatIcon from 'pixelarticons/svg/repeat.svg?react'
 import { cn } from '@/lib/utils'
 import { clock, formatDuration, isoMinutes, timeframeMinutes } from '../lib/dates'
 import { DELETED_PROJECT_COLOR, PROJECT_COLORS } from '../lib/projects'
-import { useStore } from '../store'
+import { canPasteInto, isRepeating, useStore } from '../store'
 import type { Item } from '../types'
+import { ProjectPicker } from './ProjectPicker'
 import { RichText } from './RichText'
 
 export const ROW_H = 'h-24' // 24px — shared by filled, empty, and editing rows
 
 const rowBase = cn(ROW_H, 'flex items-center gap-6 border-b border-border px-6 text-[0.857rem] leading-none')
+export const popoverClass = 'z-40 rounded-8 border border-border bg-popover p-4 text-[0.857rem] shadow-md'
 
-export function EmptyRow({ onClick }: { onClick: () => void }) {
-  return <div className={cn(rowBase, 'cursor-text hover:bg-neutral-5')} onClick={onClick} />
+// ─── Empty row ─────────────────────────────────────────────────────────
+
+export function EmptyRow({ container, onClick }: { container: string; onClick: () => void }) {
+  return (
+    <RowMenu container={container}>
+      <div className={cn(rowBase, 'cursor-text hover:bg-neutral-5')} onClick={onClick} />
+    </RowMenu>
+  )
 }
+
+// ─── Item row (sortable, right-click menu, project picker) ─────────────
 
 export function ItemRow({ item }: { item: Item }) {
   const startEditing = useStore((s) => s.startEditing)
+  const pickerOpen = useStore((s) => s.projectPickerFor === item.id)
+  const openProjectPicker = useStore((s) => s.openProjectPicker)
+  const setProject = useStore((s) => s.setProject)
+  const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({ id: item.id })
   const editable = item.type !== 'session'
+
+  // Nesting: the context-menu trigger must wrap a real element, so Popover.Root sits outside it.
   return (
-    <div
-      className={cn(rowBase, 'bg-muted', editable && 'cursor-text')}
-      onClick={editable ? () => startEditing({ container: item.container, id: item.id, afterId: null }) : undefined}
-    >
-      <Content item={item} />
-      <ProjectDot projectId={item.projectId} />
+    <Popover.Root open={pickerOpen} onOpenChange={(open) => !open && openProjectPicker(null)}>
+      <RowMenu container={item.container} item={item}>
+        <Popover.Anchor asChild>
+          <div
+            ref={setNodeRef}
+            style={{ transform: CSS.Translate.toString(transform), transition }}
+            {...attributes}
+            {...listeners}
+            role={undefined}
+            tabIndex={-1}
+            className={cn(rowBase, 'bg-muted', editable && 'cursor-text', isDragging && 'opacity-30')}
+            onClick={editable ? () => startEditing({ container: item.container, id: item.id, afterId: null }) : undefined}
+          >
+            <RowContent item={item} />
+          </div>
+        </Popover.Anchor>
+      </RowMenu>
+      <Popover.Portal>
+        <Popover.Content
+          side="bottom"
+          align="start"
+          sideOffset={4}
+          onEscapeKeyDown={(e) => e.preventDefault()} // the picker handles Escape itself (form → list → close)
+          className={popoverClass}
+        >
+          <ProjectPicker
+            value={item.projectId}
+            onPick={(projectId) => {
+              setProject(item.id, projectId)
+              openProjectPicker(null)
+            }}
+            onCancel={() => openProjectPicker(null)}
+          />
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  )
+}
+
+/** Static look of a row; also used for the drag overlay. */
+export function RowView({ item, className, style }: { item: Item; className?: string; style?: React.CSSProperties }) {
+  return (
+    <div className={cn(rowBase, 'bg-muted', className)} style={style}>
+      <RowContent item={item} />
     </div>
   )
 }
+
+function RowContent({ item }: { item: Item }) {
+  return (
+    <>
+      <Content item={item} />
+      <ProjectDot projectId={item.projectId} />
+    </>
+  )
+}
+
+// ─── Right-click menu ──────────────────────────────────────────────────
+
+const menuItem =
+  'flex h-28 cursor-default items-center gap-12 rounded-4 px-8 text-foreground-secondary outline-none data-[highlighted]:bg-muted data-[highlighted]:text-foreground data-[disabled]:text-muted-foreground'
+
+function RowMenu({ container, item, children }: { container: string; item?: Item; children: React.ReactNode }) {
+  const clipboard = useStore((s) => s.clipboard)
+  const rules = useStore((s) => s.rules)
+  const s = useStore.getState
+  const canPaste = canPasteInto(clipboard, container)
+
+  return (
+    <ContextMenu.Root>
+      <ContextMenu.Trigger asChild>{children}</ContextMenu.Trigger>
+      <ContextMenu.Portal>
+        <ContextMenu.Content
+          className={cn(popoverClass, 'min-w-[11rem]')}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
+          {item && (
+            <>
+              <ContextMenu.Item className={menuItem} onSelect={() => s().copyItem(item.id)}>
+                Copy <Kbd>⌘C</Kbd>
+              </ContextMenu.Item>
+              <ContextMenu.Item className={menuItem} onSelect={() => s().cutItem(item.id)}>
+                Cut <Kbd>⌘X</Kbd>
+              </ContextMenu.Item>
+            </>
+          )}
+          <ContextMenu.Item className={menuItem} disabled={!canPaste} onSelect={() => s().paste(container, item?.id ?? null)}>
+            Paste <Kbd>⌘V</Kbd>
+          </ContextMenu.Item>
+          {item && (
+            <>
+              <ContextMenu.Item className={menuItem} onSelect={() => s().removeItem(item.id)}>
+                Clear
+              </ContextMenu.Item>
+              <ContextMenu.Separator className="my-4 h-px bg-border" />
+              <ContextMenu.Item
+                className={menuItem}
+                // Wait for the menu to close before opening the picker, so focus lands in it.
+                onSelect={() => setTimeout(() => s().openProjectPicker(item.id), 0)}
+              >
+                Project…
+              </ContextMenu.Item>
+              {isRepeating(rules, item) && (
+                <ContextMenu.Item className={menuItem} onSelect={() => s().stopRoutine(item.id)}>
+                  Stop repeating
+                </ContextMenu.Item>
+              )}
+            </>
+          )}
+        </ContextMenu.Content>
+      </ContextMenu.Portal>
+    </ContextMenu.Root>
+  )
+}
+
+const Kbd = ({ children }: { children: React.ReactNode }) => (
+  <span className="ml-auto text-[0.786rem] text-foreground-tertiary">{children}</span>
+)
+
+// ─── Row contents per type ─────────────────────────────────────────────
 
 function Content({ item }: { item: Item }) {
   switch (item.type) {
@@ -83,6 +213,7 @@ function Content({ item }: { item: Item }) {
               rel="noreferrer"
               title={`Join: ${item.link}`}
               onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
               className="shrink-0 rounded-2 text-icon hover:text-foreground"
             >
               <ExternalLinkIcon className="size-12" />
@@ -104,7 +235,7 @@ function SessionContent({ item }: { item: Extract<Item, { type: 'session' }> }) 
         className={cn('size-6 shrink-0 bg-foreground', active && 'animate-pulse bg-success')}
         aria-label={active ? 'Focus session, active' : 'Focus session'}
       />
-      <Time className="text-foreground-secondary">
+      <Time className="flex-1 text-foreground-secondary">
         {clock(item.startedAt)}–{active ? '…' : clock(end)}
         <span className="text-foreground-tertiary"> / {formatDuration(isoMinutes(item.startedAt, end))}</span>
       </Time>
@@ -139,6 +270,7 @@ function Checkbox({ item, round }: { item: Item & { done: boolean }; round?: boo
         e.stopPropagation()
         toggleDone(item.id)
       }}
+      onPointerDown={(e) => e.stopPropagation()} // don't start a drag from the checkbox
       className="shrink-0 rounded-2 hover:opacity-70"
     >
       <CheckboxMark done={item.done} round={round} />
@@ -164,10 +296,12 @@ function Time({ className, children }: { className?: string; children: React.Rea
   return <span className={cn('shrink-0 tabular-nums text-foreground-tertiary', className)}>{children}</span>
 }
 
-function ProjectDot({ projectId }: { projectId: string | null }) {
+export function ProjectDot({ projectId }: { projectId: string | null }) {
   const project = useStore((s) => s.projects.find((p) => p.id === projectId))
   if (!project) return null
   const color = project.deleted ? DELETED_PROJECT_COLOR : PROJECT_COLORS[project.color]
   const name = project.deleted ? `~deleted-${project.name}` : project.name
-  return <span title={name} aria-label={`Project: ${name}`} className="size-6 shrink-0 rounded-full" style={{ background: color }} />
+  return (
+    <span title={name} aria-label={`Project: ${name}`} className="size-6 shrink-0 rounded-full" style={{ background: color }} />
+  )
 }
