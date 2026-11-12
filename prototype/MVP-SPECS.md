@@ -11,14 +11,14 @@ Work happens on the `prototype` branch. Each step is committed after review.
   - [x] 4. `/` type picker + event shortcut
   - [x] 5. Inline links
   - [x] 6. Weekly / monthly sections behavior
-- [ ] **Part 3: Organizing** *(built, in review)*
+- [x] **Part 3: Organizing**
   - [x] 7. Projects
   - [x] 8. Right-click menu + keyboard copy / cut / paste
   - [x] 9. Drag & drop + time sorting
   - [x] 10. Routines recurrence
-- [ ] **Part 4: Focus sessions**
-  - [ ] 11. Session flow (start, navbar counter, pause / stop / extend, end alert)
-  - [ ] 12. Pop-out timer
+- [ ] **Part 4: Focus sessions** *(built, in review)*
+  - [x] 11. Session flow (start, navbar counter, pause / stop / extend, end alert)
+  - [x] 12. Pop-out timer
 - [ ] **Part 5: Mobile**
   - [ ] 13. Weekly view
 
@@ -161,22 +161,28 @@ Each holds three small labeled sections, stacked:
 - `Backspace` on an empty row: delete it.
 
 ### Focus session flow
-1. The user clicks the navbar "start a Stint" button and sets the duration.
+1. The user clicks the navbar "start a Stint" button and sets the duration: presets 25 / 50 / 90 min, or a custom value (1–600 min).
 2. The session starts:
    - An `active` session row appears in today's cell, placed by time.
-   - The counter runs in the navbar.
+   - The counter runs in the navbar and in the tab title (`24:13 · Stint`).
    - A **pop-out timer** opens automatically (see below).
 3. While it runs, the user can pause, resume, or stop early. A session stopped early is saved as `finished` with the time actually worked.
+   - The duration shown on a session is focused time: pauses aren't counted.
+   - A session stopped under 1 minute is discarded (no row is kept).
+   - A running session survives a page refresh.
 4. **When the counter reaches zero:**
    - A soft notification sound plays.
    - The browser tab is highlighted and its title text changes.
-   - The app waits for the user to respond. The user can **extend** the session or **confirm** it's finished.
-5. Only once the user confirms is the row marked `finished`.
+   - The app waits for the user to respond. The user can **extend** the session (+5m / +15m) or **confirm** it's finished (Done).
+   - Time spent waiting after time's up isn't counted: extending continues from the moment the counter hit zero.
+5. Only once the user confirms is the row marked `finished`. Its end time is the moment the counter hit zero, not when the user clicked Done.
 
 ### Pop-out timer
 - It opens as soon as a session starts, in a small always-on-top window, so the user stays aware of the active session while moving between desktop apps and browser tabs.
 - Priority: as seamless and simple as possible.
 - Implementation: the browser's Document Picture-in-Picture API (Chromium browsers). The click that starts the session is what opens the window.
+- It shows the state, the counter, and the same controls as the navbar (pause / resume, stop; Done / extend at time's up).
+- If the user closes it, a pop-out button next to the navbar counter reopens it. It closes on its own when the session finishes.
 - **Safari / Firefox:** no extra design for now. The rest of the session flow still works there; there's just no pop-out (see open questions).
 
 ## Tech stack

@@ -7,6 +7,9 @@ import RepeatIcon from 'pixelarticons/svg/repeat.svg?react'
 import { cn } from '@/lib/utils'
 import { clock, formatDuration, isoMinutes, timeframeMinutes } from '../lib/dates'
 import { DELETED_PROJECT_COLOR, PROJECT_COLORS } from '../lib/projects'
+import { useShallow } from 'zustand/react/shallow'
+import { sessionClock } from '../lib/session'
+import { useNow } from '../lib/useNow'
 import { canPasteInto, isRepeating, useStore } from '../store'
 import type { Item } from '../types'
 import { ProjectPicker } from './ProjectPicker'
@@ -228,18 +231,57 @@ function Content({ item }: { item: Item }) {
 
 function SessionContent({ item }: { item: Extract<Item, { type: 'session' }> }) {
   const active = item.status === 'active'
-  const end = item.endedAt ?? new Date().toISOString()
+  const session = useStore((s) => (active && s.activeSession?.itemId === item.id ? s.activeSession : null))
+  const now = useNow(15_000, active)
+  const focusedMin = session
+    ? sessionClock(session, now).focusedMs / 60_000
+    : (item.focusedMin ?? isoMinutes(item.startedAt, item.endedAt ?? new Date(now).toISOString()))
+  const paused = !!session?.pausedAt
   return (
     <>
       <span
-        className={cn('size-6 shrink-0 bg-foreground', active && 'animate-pulse bg-success')}
+        className={cn('size-6 shrink-0 bg-foreground', active && (paused ? 'bg-neutral-40' : 'animate-pulse bg-success'))}
         aria-label={active ? 'Focus session, active' : 'Focus session'}
       />
-      <Time className="flex-1 text-foreground-secondary">
-        {clock(item.startedAt)}–{active ? '…' : clock(end)}
-        <span className="text-foreground-tertiary"> / {formatDuration(isoMinutes(item.startedAt, end))}</span>
+      <Time className="text-foreground-secondary">
+        {clock(item.startedAt)}–{active ? '…' : clock(item.endedAt!)}
+        <span className="text-foreground-tertiary"> / {formatDuration(focusedMin)}</span>
       </Time>
+      <span className="flex-1" />
+      <SessionTasks ids={item.taskIds ?? []} />
     </>
+  )
+}
+
+/** Tentative session ↔ task link: "3 tasks", click to list the tasks finished during the session. */
+function SessionTasks({ ids }: { ids: string[] }) {
+  const tasks = useStore(useShallow((s) => s.items.filter((i) => i.type === 'task' && ids.includes(i.id))))
+  if (!tasks.length) return null
+  return (
+    <Popover.Root>
+      <Popover.Trigger
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        className="shrink-0 rounded-2 text-foreground-tertiary tabular-nums hover:text-foreground hover:underline"
+      >
+        {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content side="bottom" align="end" sideOffset={4} className={cn(popoverClass, 'w-[14rem] p-8')}>
+          <p className="mb-4 text-[0.786rem] text-foreground-tertiary">Finished during this session</p>
+          <ul className="flex flex-col gap-4">
+            {tasks.map((t) => (
+              <li key={t.id} className="flex items-center gap-6 text-foreground-secondary">
+                <CheckboxMark done />
+                <span className="truncate">
+                  <RichText value={t.type === 'task' ? t.text : ''} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   )
 }
 

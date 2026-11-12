@@ -38,6 +38,21 @@ export interface SessionItem extends BaseItem {
   status: 'active' | 'finished'
   startedAt: string // ISO
   endedAt: string | null // ISO, set once finished
+  /** Focused minutes (pauses excluded). Missing on older/sample data = end − start. */
+  focusedMin?: number
+  /** Tentative: tasks checked off while this session was running. */
+  taskIds?: string[]
+}
+
+/** The running focus session (one at a time). Everything is derived from timestamps. */
+export interface ActiveSession {
+  itemId: string
+  plannedMin: number
+  startedAt: string // ISO
+  pausedAt: string | null // ISO while paused
+  pausedMs: number // total paused time so far
+  /** Set when the countdown reaches zero; the session then waits for the user. */
+  timeUpAt: string | null
 }
 
 export type Repeat = 'daily' | 'weekly' | 'monthly'

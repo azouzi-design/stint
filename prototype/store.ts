@@ -5,7 +5,8 @@ import { dayKey, monthWeeks } from './lib/dates'
 import { plainText } from './lib/rich'
 import { containerDate, ruleDates } from './lib/routines'
 import { buildSeed, SEED_PROJECTS, seedRules } from './seed'
-import type { Clipboard, Editing, Item, ItemFields, Project, Repeat, RoutineRule, Section } from './types'
+import { sessionClock } from './lib/session'
+import type { ActiveSession, Clipboard, Editing, Item, ItemFields, Project, Repeat, RoutineRule, Section } from './types'
 
 interface State {
   items: Item[]
@@ -53,6 +54,19 @@ interface State {
   stopRoutine: (id: string) => void
   /** Generate missing routine copies for the visible month. */
   ensureRoutines: () => void
+
+  /** The running focus session, if any. */
+  activeSession: ActiveSession | null
+  /** Creates an active session row in today's cell and starts the countdown. */
+  startSession: (minutes: number) => void
+  pauseSession: () => void
+  resumeSession: () => void
+  /** Called when the countdown reaches zero: the session then waits for the user. */
+  markTimeUp: () => void
+  /** Add minutes (also from the time-up state: the wait isn't counted as focus time). */
+  extendSession: (minutes: number) => void
+  /** Finish now (stopped early) or at the time-up point. Sessions under a minute are discarded. */
+  finishSession: () => void
 }
 
 // ─── Pure helpers ──────────────────────────────────────────────────────
@@ -243,7 +257,22 @@ export const useStore = create<State>()(
         }),
 
       toggleDone: (id) =>
-        set((s) => ({ items: s.items.map((i) => (i.id === id && 'done' in i ? { ...i, done: !i.done } : i)) })),
+        set((s) => {
+          const item = s.items.find((i) => i.id === id)
+          if (!item || !('done' in item)) return {}
+          const done = !item.done
+          let items = s.items.map((i) => (i.id === id ? ({ ...i, done } as Item) : i))
+          // Tentative session ↔ task link: tasks checked off during a session count toward it.
+          const a = s.activeSession
+          if (a && item.type === 'task') {
+            items = items.map((i) => {
+              if (i.id !== a.itemId || i.type !== 'session') return i
+              const ids = (i.taskIds ?? []).filter((t) => t !== id)
+              return { ...i, taskIds: done ? [...ids, id] : ids }
+            })
+          }
+          return { items }
+        }),
 
       setProject: (id, projectId) =>
         set((s) => {
@@ -371,13 +400,75 @@ export const useStore = create<State>()(
           const items = generateRoutines(s.items, s.rules, from, to)
           return items === s.items ? {} : { items }
         }),
+
+      activeSession: null,
+      startSession: (minutes) => {
+        if (get().activeSession) return
+        const startedAt = new Date().toISOString()
+        const itemId = get().addItem(dayKey(new Date()), null, {
+          type: 'session',
+          status: 'active',
+          startedAt,
+          endedAt: null,
+          taskIds: [],
+        })
+        set({ activeSession: { itemId, plannedMin: minutes, startedAt, pausedAt: null, pausedMs: 0, timeUpAt: null } })
+      },
+      pauseSession: () =>
+        set((s) => (s.activeSession && !s.activeSession.pausedAt && !s.activeSession.timeUpAt
+          ? { activeSession: { ...s.activeSession, pausedAt: new Date().toISOString() } }
+          : {})),
+      resumeSession: () =>
+        set((s) => {
+          const a = s.activeSession
+          if (!a?.pausedAt) return {}
+          return { activeSession: { ...a, pausedAt: null, pausedMs: a.pausedMs + Date.now() - Date.parse(a.pausedAt) } }
+        }),
+      markTimeUp: () =>
+        set((s) => {
+          const a = s.activeSession
+          if (!a || a.timeUpAt || a.pausedAt) return {}
+          // The exact moment it hit zero (the check may run a little late in a background tab).
+          const at = Date.parse(a.startedAt) + a.pausedMs + a.plannedMin * 60_000
+          return { activeSession: { ...a, timeUpAt: new Date(Math.min(at, Date.now())).toISOString() } }
+        }),
+      extendSession: (minutes) =>
+        set((s) => {
+          const a = s.activeSession
+          if (!a) return {}
+          const waited = a.timeUpAt ? Date.now() - Date.parse(a.timeUpAt) : 0
+          return { activeSession: { ...a, plannedMin: a.plannedMin + minutes, pausedMs: a.pausedMs + waited, timeUpAt: null } }
+        }),
+      finishSession: () => {
+        const a = get().activeSession
+        if (!a) return
+        const { focusedMs } = sessionClock(a)
+        const endedAt = a.timeUpAt ?? new Date().toISOString()
+        set((s) => ({
+          activeSession: null,
+          items:
+            focusedMs < 60_000
+              ? s.items.filter((i) => i.id !== a.itemId) // started by accident: discard
+              : s.items.map((i) =>
+                  i.id === a.itemId && i.type === 'session'
+                    ? { ...i, status: 'finished', endedAt, focusedMin: Math.round(focusedMs / 60_000) }
+                    : i,
+                ),
+        }))
+      },
     }),
     {
       name: 'stint-prototype',
       // Bump when the data shape changes: old saved data is discarded and re-seeded.
       version: 3,
       migrate: () => ({ items: buildSeed(), projects: SEED_PROJECTS, rules: seedRules() }) as Partial<State>,
-      partialize: (s) => ({ items: s.items, projects: s.projects, rules: s.rules, clipboard: s.clipboard }),
+      partialize: (s) => ({
+        items: s.items,
+        projects: s.projects,
+        rules: s.rules,
+        clipboard: s.clipboard,
+        activeSession: s.activeSession, // a refresh keeps the session running
+      }),
       onRehydrateStorage: () => (state) => state?.ensureRoutines(),
     },
   ),

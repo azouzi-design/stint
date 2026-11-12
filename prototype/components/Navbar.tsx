@@ -3,10 +3,10 @@ import { DropdownMenu } from 'radix-ui'
 import ChevronLeftIcon from 'pixelarticons/svg/chevron-left.svg?react'
 import ChevronRightIcon from 'pixelarticons/svg/chevron-right.svg?react'
 import MenuIcon from 'pixelarticons/svg/menu.svg?react'
-import PlayIcon from 'pixelarticons/svg/play.svg?react'
 import Logomark from '@/assets/brand/logomark-stint.svg?react'
 import { cn } from '@/lib/utils'
 import { useStore } from '../store'
+import { SessionControls } from './SessionControls'
 
 const ghost = 'flex h-28 items-center gap-6 rounded-6 px-8 text-[0.857rem] font-medium text-foreground-secondary hover:bg-muted'
 const iconBtn = 'flex size-28 items-center justify-center rounded-6 text-icon hover:bg-muted hover:text-foreground'
@@ -22,11 +22,7 @@ export function Navbar() {
       {/* Left: logomark + start */}
       <div className="flex items-center gap-8">
         <Logomark className="size-24 text-foreground" aria-label="Stint" />
-        {/* Focus sessions come in Part 4 */}
-        <button type="button" className={ghost} title="Focus sessions arrive in Part 4">
-          <PlayIcon className="size-12" />
-          Start a Stint
-        </button>
+        <SessionControls />
       </div>
 
       {/* Center: month navigation */}
