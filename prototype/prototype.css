@@ -1,0 +1,7 @@
+/* Prototype-only styles (shared tokens come from @/index.css) */
+
+/* Thin, quiet scrollbars inside calendar cells */
+.cell-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--primitive-neutral-30)) transparent;
+}

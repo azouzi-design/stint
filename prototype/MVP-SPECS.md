@@ -1,5 +1,27 @@
 # Stint — MVP Prototype Spec
 
+## Build progress
+Work happens on the `prototype` branch. Each step is committed after review.
+
+- [ ] **Part 1: The calendar you can look at** *(built, in review)*
+  - [x] 1. Calendar grid, navbar shell, month navigation
+  - [x] 2. Item model, localStorage persistence, sample data, every item type rendered (read-only)
+- [ ] **Part 2: Writing in it**
+  - [ ] 3. Typing in rows (TipTap, placeholder hint, Enter / Backspace, checking off)
+  - [ ] 4. `/` type picker + event shortcut
+  - [ ] 5. Inline links
+  - [ ] 6. Weekly / monthly sections behavior
+- [ ] **Part 3: Organizing**
+  - [ ] 7. Projects
+  - [ ] 8. Right-click menu + keyboard copy / cut / paste
+  - [ ] 9. Drag & drop + time sorting
+  - [ ] 10. Routines recurrence
+- [ ] **Part 4: Focus sessions**
+  - [ ] 11. Session flow (start, navbar counter, pause / stop / extend, end alert)
+  - [ ] 12. Pop-out timer
+- [ ] **Part 5: Mobile**
+  - [ ] 13. Weekly view
+
 ## Purpose
 An interactive front-end for testing, playing with, and defining what the product should eventually be.
 
