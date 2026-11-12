@@ -5,7 +5,7 @@ import { extendTailwindMerge } from 'tailwind-merge'
 // bundled per Figma text style). tailwind-merge doesn't know about them out of the box,
 // so it classifies e.g. `text-pixel-base` as a `text-color` utility and silently drops it
 // when a real color utility like `text-foreground` appears later in the same class list.
-const twMerge = extendTailwindMerge({
+const twMerge = extendTailwindMerge<'font-text-style'>({
   extend: {
     classGroups: {
       'font-text-style': [

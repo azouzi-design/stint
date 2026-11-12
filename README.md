@@ -1,16 +1,8 @@
 # Stint
 
-A local-first productivity app built around a single workflow: capture tasks, drag them into a Focus Session, run a timer, and review your work in History.
-
-## Pages
-
-- **Today** — your task list for the day + Focus Session widget
-- **Later** — a holding space for future tasks
-- **History** — a week-grid view of past Focus Sessions
-
 ## Stack
 
-React · TypeScript · Vite · Tailwind CSS · Zustand · TipTap · dnd-kit · Supabase · Vercel
+React · TypeScript · Vite · Tailwind CSS v4 · Zustand · TipTap · dnd-kit · Radix UI · date-fns · Supabase · Vercel
 
 ## Getting started
 
@@ -18,3 +10,10 @@ React · TypeScript · Vite · Tailwind CSS · Zustand · TipTap · dnd-kit · S
 2. Run `npm install`
 3. Create `.env.local` and fill in your Supabase credentials (see `.env.example`)
 4. Run `npm run dev`
+
+## Prototype
+
+A front-end-only sandbox for defining the product lives in `prototype/` (spec: `prototype/MVP-SPECS.md`).
+
+- Run `npm run proto` → http://localhost:5174
+- No Supabase or env vars needed; data is stored in localStorage.
