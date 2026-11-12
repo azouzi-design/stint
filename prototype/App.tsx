@@ -1,7 +1,17 @@
+import { Calendar } from './components/Calendar'
+import { Navbar } from './components/Navbar'
+import { PipPortal } from './components/PipTimer'
+import { SessionController } from './components/SessionController'
+
 export default function App() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
-      <p className="text-body text-muted-foreground">Prototype sandbox</p>
+    <div className="min-h-screen bg-background font-geist text-foreground">
+      <SessionController />
+      <PipPortal />
+      <Navbar />
+      <main>
+        <Calendar />
+      </main>
     </div>
   )
 }

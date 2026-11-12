@@ -1,5 +1,27 @@
 # Stint — MVP Prototype Spec
 
+## Build progress
+Work happens on the `prototype` branch. Each step is committed after review.
+
+- [x] **Part 1: The calendar you can look at**
+  - [x] 1. Calendar grid, navbar shell, month navigation
+  - [x] 2. Item model, localStorage persistence, sample data, every item type rendered (read-only)
+- [x] **Part 2: Writing in it**
+  - [x] 3. Typing in rows (TipTap, placeholder hint, Enter / Backspace, checking off)
+  - [x] 4. `/` type picker + event shortcut
+  - [x] 5. Inline links
+  - [x] 6. Weekly / monthly sections behavior
+- [x] **Part 3: Organizing**
+  - [x] 7. Projects
+  - [x] 8. Right-click menu + keyboard copy / cut / paste
+  - [x] 9. Drag & drop + time sorting
+  - [x] 10. Routines recurrence
+- [x] **Part 4: Focus sessions**
+  - [x] 11. Session flow (start, navbar counter, pause / stop / extend, end alert)
+  - [x] 12. Pop-out timer
+- [x] **Part 5: Mobile**
+  - [x] 13. Weekly view
+
 ## Purpose
 An interactive front-end for testing, playing with, and defining what the product should eventually be.
 
@@ -34,8 +56,14 @@ An interactive front-end for testing, playing with, and defining what the produc
 - Days outside the current month are greyed out.
 
 ### Calendar (mobile: week)
-- The user moves between weeks by swiping or with arrows.
+- Below 768px wide. The user moves between weeks by swiping or with arrows.
 - The weekly cell sits below the 7 days, and the monthly cell at the bottom.
+- **Navbar (two rows):** logomark + start / session controls + menu on top; the week (`Nov 9 – 15`, `W46`), Today and the arrows below.
+- **Days are stacked** top to bottom, Monday → Sunday. Each day shows all its items (no inner scroll; the page scrolls) and at least 3 rows.
+- **Monthly cell:** the month the week belongs to: the one holding its Thursday (today's week always shows today's month).
+- **Swipe:** native horizontal scroll-snap. While swiping, the previous / next week is visible (read-only) beside the current one.
+- **Touch gestures:** tap a row to edit it. Press and hold lifts it: move to drag it, or release without moving to open the row menu (copy / cut / paste / clear / project / repeat).
+- No pop-out timer on phones (the API is desktop-only); the navbar counter, tab title and alert still work.
 
 ### Day layout (list view)
 A day is a vertical list of rows, and any row can hold any item type.
@@ -62,7 +90,16 @@ The goal is to keep the speed and density of the spreadsheet while adding struct
 | **Focus session** | States: `active` (running now) or `finished`. Cannot be scheduled ahead of time; sessions only exist once started. Can be paused, extended, and stopped early. There's no separate name: a session is labeled automatically by its timeframe and duration, e.g. `5:00–6:30 / 1.5h`. |
 | **Note** | Free text |
 | **Event** | Title, timeframe (`5:00–5:30`), link. The duration is calculated from the timeframe. The link opens in one click, so the user can join the meeting as it starts. |
-| **Routine** | A task that repeats daily, weekly, or monthly. Each copy is checked off separately. The user can turn it off from any copy. Shown as a task with a repeat icon. |
+| **Routine** | A task that repeats daily, weekly, or monthly. Each copy is checked off separately. The user can turn it off from any copy. Shown as a task with a repeat icon. See **Routines** below. |
+
+### Routines
+- Created in a day with `/routine · daily|weekly|monthly`. That day is the first copy, and it sets the weekday (weekly) or day of the month (monthly; clamped in short months).
+- Copies are generated for every month the user views, at the top of each day.
+- Editing a copy's text or project applies to that copy and all later ones (earlier copies keep their history).
+- Deleting a copy (Clear, Cut, Backspace) removes only that day; it isn't regenerated.
+- Changing a copy's repeat restarts the routine from that day with the new repeat.
+- **Stop repeating** (right-click): keeps this copy and earlier ones, removes later ones.
+- Dragging a copy to another day keeps it linked to its original date.
 
 ### Weekly / monthly cells
 Each holds three small labeled sections, stacked:
@@ -84,6 +121,10 @@ Each holds three small labeled sections, stacked:
   3. Create project: the user types the name in an input field and picks a color right there. The new project is assigned immediately.
 - **Editing:** projects are renamed, recolored, and deleted straight from that same list, in a very minimal but clear way. There's no settings page for them.
 - **Deleting:** the project's items stay. Each one keeps a **grey dot** labeled `~deleted-<projectname>`, which the user can remove from the item.
+- **Details:**
+  - `#` opens the list when typed at the start of a row or after a space; `Escape` closes it and puts the typed `#text` back as plain text.
+  - The list has a search field. Hovering a project shows a pencil to rename / recolor / delete it.
+  - "Remove project" appears when the item has one (including a deleted one).
 
 ## Interactions
 
@@ -93,35 +134,61 @@ Each holds three small labeled sections, stacked:
 - Typing `/` opens a type picker: note, event, routine, etc.
 - Typing `#` opens the project list (see Projects).
 - **Inline links:** in any row with text, the user can select part of the text and attach a link to it. This applies to every type, not only events.
+  - Selecting text shows a small "Link ⌘K" button below the row; clicking it or pressing `⌘K` opens a link field. An existing link can be edited or removed the same way.
+  - Pasting a URL over selected text links it; typing a URL turns it into a link automatically.
+  - Stored as markdown-style text (`Call [Jon](https://…)`).
 - **Event shortcut:** typing a time range at the start of a row (`5:00-5:30 Meet Dave`) turns it into an event automatically, the way the user writes in the spreadsheet today. `/event` also works. This is the starting approach and should be validated in the prototype.
+  - A URL at the end of an event row becomes the event's join link: `14:00-15:00 Call with Jon https://meet.google.com/abc`.
+  - An event without a time range is saved as a task.
+  - Editing an event shows it as text (`14:00-15:00 Call with Jon https://…`), so the time and link are changed by editing the text.
+- **Weekly / monthly sections:** the type is fixed by the section (Goals → goal, Notes → note, Backlog → task). No `/` picker or event shortcut there.
+- **Editing keys:** `Enter` saves and opens a new row below; `Escape` or clicking away saves and closes; `Backspace` on an empty row deletes it and moves to the row above. A row whose text is cleared is deleted.
+- **Clicking:** a row opens it for editing; a checkbox toggles it; a link opens in a new tab without editing the row.
 
 ### Ordering & moving
 - **Time-bound items** (events, focus sessions) sort themselves by time by default. The user can still drag them elsewhere.
 - **Drag & drop:** anything can be dragged anywhere on the visible calendar (within a day, between days, into the weekly or monthly cells).
+  - The row moves live while dragging, leaving a faded placeholder where it will land: above or below the row under the pointer, depending on which half the pointer is over.
+  - A drop where the item can't go (a session onto a weekly cell) puts it back where it started.
+- **Time sorting:** new events (typed or via `/event`) and events whose time is edited are placed in time order among the day's other events and sessions. Dragged and pasted rows keep the position the user chose.
 - **Right-click menu on any row:** copy, cut, paste, clear. Since a month fills the whole screen, cut/paste is how items move to places outside the current view (e.g. another month).
 
+### Copy / cut / paste
+- **Right-click menu:** Copy, Cut, Paste, Clear, Project…, and "Stop repeating" on routine copies. On an empty row: Paste.
+- Cut removes the row right away; it can then be pasted anywhere, including another month.
+- Pasted rows go below the row that was right-clicked, or at the end of the list when pasted into an empty row.
+- **Types adapt to where they land** (paste and drag): a goal in a day becomes a task. In weekly / monthly sections, items become goals, notes, or tasks depending on the section. Focus sessions can't go into weekly / monthly cells.
+- Copying a routine copy pastes a plain task (only the rule creates routine copies). Cutting one moves it and keeps it a routine copy.
+
 ### Keyboard
-- `Cmd+C` / `Cmd+X` / `Cmd+V` on a selected row: copy, cut, paste.
+- `Cmd+C` / `Cmd+X` on a row being edited, with no text selected: copy / cut the whole row. With text selected, they copy / cut the text as usual.
+- `Cmd+V` in an empty row, right after copying a row: pastes the row itself. Any other clipboard content pastes as text.
 - `Enter`: create a new row below.
 - `Backspace` on an empty row: delete it.
 
 ### Focus session flow
-1. The user clicks the navbar "start a Stint" button and sets the duration.
+1. The user clicks the navbar "start a Stint" button and sets the duration: presets 25 / 50 / 90 min, or a custom value (1–600 min).
 2. The session starts:
    - An `active` session row appears in today's cell, placed by time.
-   - The counter runs in the navbar.
+   - The counter runs in the navbar and in the tab title (`24:13 · Stint`).
    - A **pop-out timer** opens automatically (see below).
 3. While it runs, the user can pause, resume, or stop early. A session stopped early is saved as `finished` with the time actually worked.
+   - The duration shown on a session is focused time: pauses aren't counted.
+   - A session stopped under 1 minute is discarded (no row is kept).
+   - A running session survives a page refresh.
 4. **When the counter reaches zero:**
    - A soft notification sound plays.
    - The browser tab is highlighted and its title text changes.
-   - The app waits for the user to respond. The user can **extend** the session or **confirm** it's finished.
-5. Only once the user confirms is the row marked `finished`.
+   - The app waits for the user to respond. The user can **extend** the session (+5m / +15m) or **confirm** it's finished (Done).
+   - Time spent waiting after time's up isn't counted: extending continues from the moment the counter hit zero.
+5. Only once the user confirms is the row marked `finished`. Its end time is the moment the counter hit zero, not when the user clicked Done.
 
 ### Pop-out timer
 - It opens as soon as a session starts, in a small always-on-top window, so the user stays aware of the active session while moving between desktop apps and browser tabs.
 - Priority: as seamless and simple as possible.
 - Implementation: the browser's Document Picture-in-Picture API (Chromium browsers). The click that starts the session is what opens the window.
+- It shows the state, the counter, and the same controls as the navbar (pause / resume, stop; Done / extend at time's up).
+- If the user closes it, a pop-out button next to the navbar counter reopens it. It closes on its own when the session finishes.
 - **Safari / Firefox:** no extra design for now. The rest of the session flow still works there; there's just no pop-out (see open questions).
 
 ## Tech stack
@@ -132,7 +199,7 @@ Each holds three small labeled sections, stacked:
 | Styling | Tailwind CSS v4, `@/index.css` tokens, `cn()` (clsx + tailwind-merge), cva | The project palette is defined in OKLCH |
 | Fonts / icons | Geist, dseg (7-segment timer), pixelarticons via svgr | |
 | State + persistence | Zustand + `persist` middleware → localStorage | |
-| Row text editing | TipTap | Minimal: single line, text + links only. **Only the row being edited mounts an editor**; every other row renders static text. The Link extension handles inline links, the bubble menu / `Cmd+K` attaches a link to selected text, and the Suggestion utility powers the `/` type picker and `#` project list. |
+| Row text editing | TipTap | Minimal: single line, text + links only. **Only the row being edited mounts an editor**; every other row renders static text. The Link extension handles inline links (non-inclusive, so typing after a link doesn't extend it). The `/` picker and link popover are small custom components anchored with radix Popover; TipTap's Suggestion utility is still an option for `#` (which, unlike `/`, can appear mid-text). |
 | Drag & drop | dnd-kit (core + sortable) | Drag across days, the weekly and monthly cells, and within a day; auto-scrolls inside scrollable cells |
 | Menus / popovers | radix-ui | Context menu (copy / cut / paste / clear), the start-session and project popovers, the navbar menu |
 | Dates | date-fns | Month grid (weeks start Monday), mobile week navigation, timeframe math, routine repeats |
