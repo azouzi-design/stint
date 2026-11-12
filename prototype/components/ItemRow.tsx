@@ -6,18 +6,24 @@ import { clock, formatDuration, isoMinutes, timeframeMinutes } from '../lib/date
 import { DELETED_PROJECT_COLOR, PROJECT_COLORS } from '../lib/projects'
 import { useStore } from '../store'
 import type { Item } from '../types'
+import { RichText } from './RichText'
 
-export const ROW_H = 'h-24' // 24px — shared by filled and empty rows
+export const ROW_H = 'h-24' // 24px — shared by filled, empty, and editing rows
 
 const rowBase = cn(ROW_H, 'flex items-center gap-6 border-b border-border px-6 text-[0.857rem] leading-none')
 
-export function EmptyRow() {
-  return <div className={rowBase} />
+export function EmptyRow({ onClick }: { onClick: () => void }) {
+  return <div className={cn(rowBase, 'cursor-text hover:bg-neutral-5')} onClick={onClick} />
 }
 
 export function ItemRow({ item }: { item: Item }) {
+  const startEditing = useStore((s) => s.startEditing)
+  const editable = item.type !== 'session'
   return (
-    <div className={cn(rowBase, 'bg-muted')}>
+    <div
+      className={cn(rowBase, 'bg-muted', editable && 'cursor-text')}
+      onClick={editable ? () => startEditing({ container: item.container, id: item.id, afterId: null }) : undefined}
+    >
       <Content item={item} />
       <ProjectDot projectId={item.projectId} />
     </div>
@@ -29,36 +35,46 @@ function Content({ item }: { item: Item }) {
     case 'task':
       return (
         <>
-          <Checkbox done={item.done} />
-          <Text done={item.done}>{item.text}</Text>
+          <Checkbox item={item} />
+          <Text done={item.done}>
+            <RichText value={item.text} />
+          </Text>
         </>
       )
     case 'goal':
       return (
         <>
-          <Checkbox done={item.done} round />
+          <Checkbox item={item} round />
           <Text done={item.done} className="font-medium text-foreground">
-            {item.text}
+            <RichText value={item.text} />
           </Text>
         </>
       )
     case 'routine':
       return (
         <>
-          <Checkbox done={item.done} />
-          <Text done={item.done}>{item.text}</Text>
+          <Checkbox item={item} />
+          <Text done={item.done}>
+            <RichText value={item.text} />
+          </Text>
           <RepeatIcon className="size-12 shrink-0 text-icon" aria-label={`Repeats ${item.repeat}`} />
         </>
       )
     case 'note':
-      return <Text className="text-foreground-tertiary">{item.text}</Text>
+      return (
+        <Text className="text-foreground-tertiary">
+          <RichText value={item.text} />
+        </Text>
+      )
     case 'event':
       return (
         <>
           <Time>
             {item.start}–{item.end}
           </Time>
-          <Text>{item.title}</Text>
+          <Text>
+            <RichText value={item.title} />
+          </Text>
           <span className="sr-only">{formatDuration(timeframeMinutes(item.start, item.end))}</span>
           {item.link && (
             <a
@@ -66,6 +82,7 @@ function Content({ item }: { item: Item }) {
               target="_blank"
               rel="noreferrer"
               title={`Join: ${item.link}`}
+              onClick={(e) => e.stopPropagation()}
               className="shrink-0 rounded-2 text-icon hover:text-foreground"
             >
               <ExternalLinkIcon className="size-12" />
@@ -95,11 +112,10 @@ function SessionContent({ item }: { item: Extract<Item, { type: 'session' }> }) 
   )
 }
 
-function Checkbox({ done, round }: { done: boolean; round?: boolean }) {
+/** Visual checkbox (also used by the row editor as a type preview). */
+export function CheckboxMark({ done, round }: { done: boolean; round?: boolean }) {
   return (
     <span
-      role="checkbox"
-      aria-checked={done}
       className={cn(
         'flex size-12 shrink-0 items-center justify-center border',
         round ? 'rounded-full' : 'rounded-2',
@@ -111,11 +127,30 @@ function Checkbox({ done, round }: { done: boolean; round?: boolean }) {
   )
 }
 
+function Checkbox({ item, round }: { item: Item & { done: boolean }; round?: boolean }) {
+  const toggleDone = useStore((s) => s.toggleDone)
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={item.done}
+      aria-label={item.done ? 'Mark as not done' : 'Mark as done'}
+      onClick={(e) => {
+        e.stopPropagation()
+        toggleDone(item.id)
+      }}
+      className="shrink-0 rounded-2 hover:opacity-70"
+    >
+      <CheckboxMark done={item.done} round={round} />
+    </button>
+  )
+}
+
 function Text({ done, className, children }: { done?: boolean; className?: string; children: React.ReactNode }) {
   return (
     <span
       className={cn(
-        'min-w-0 flex-1 truncate text-foreground-secondary',
+        'min-w-0 flex-1 truncate leading-[1.4] text-foreground-secondary',
         className,
         done && 'text-foreground-tertiary line-through decoration-neutral-40',
       )}

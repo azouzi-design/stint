@@ -3,7 +3,7 @@ import { isSameDay, isSameMonth } from 'date-fns'
 import { dayKey, monthKey, monthWeeks, weekKey } from '../lib/dates'
 import { groupByContainer, useStore } from '../store'
 import type { Item, Section } from '../types'
-import { DayCell, MonthRow, WeekCell } from './Cells'
+import { DayCell, MonthRow, WeekCell, type SectionCells } from './Cells'
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 const GRID = 'grid grid-cols-8'
@@ -16,11 +16,10 @@ export function Calendar() {
   const weeks = useMemo(() => monthWeeks(month), [month])
   const today = new Date()
   const get = (key: string) => byContainer.get(key) ?? EMPTY
-  const sections = (keyFor: (s: Section) => string): Record<Section, Item[]> => ({
-    goals: get(keyFor('goals')),
-    notes: get(keyFor('notes')),
-    backlog: get(keyFor('backlog')),
-  })
+  const sections = (keyFor: (s: Section) => string): SectionCells => {
+    const cell = (s: Section) => ({ container: keyFor(s), items: get(keyFor(s)) })
+    return { goals: cell('goals'), notes: cell('notes'), backlog: cell('backlog') }
+  }
 
   return (
     <div className="min-w-[68rem]">
@@ -38,17 +37,18 @@ export function Calendar() {
           {days.map((d) => (
             <DayCell
               key={d.toISOString()}
+              container={dayKey(d)}
               date={d}
               inMonth={isSameMonth(d, month)}
               isToday={isSameDay(d, today)}
               items={get(dayKey(d))}
             />
           ))}
-          <WeekCell monday={days[0]} bySection={sections((s) => weekKey(days[0], s))} />
+          <WeekCell monday={days[0]} cells={sections((s) => weekKey(days[0], s))} />
         </div>
       ))}
 
-      <MonthRow month={month} bySection={sections((s) => monthKey(month, s))} />
+      <MonthRow month={month} cells={sections((s) => monthKey(month, s))} />
     </div>
   )
 }

@@ -58,6 +58,20 @@ export interface GoalItem extends BaseItem {
 export type Item = TaskItem | NoteItem | EventItem | SessionItem | RoutineItem | GoalItem
 export type ItemType = Item['type']
 
+/** An item's own fields, without its identity/position (id, container, order, project). */
+export type ItemFields = Item extends infer T
+  ? T extends Item
+    ? Omit<T, 'id' | 'container' | 'order' | 'projectId'>
+    : never
+  : never
+
+/** Which row is being edited. id = existing item; id null = new row after `afterId` (null = at the end). */
+export interface Editing {
+  container: ContainerKey
+  id: string | null
+  afterId: string | null
+}
+
 // ─── Projects ──────────────────────────────────────────────────────────
 export interface Project {
   id: string

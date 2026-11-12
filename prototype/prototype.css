@@ -5,3 +5,20 @@
   scrollbar-width: thin;
   scrollbar-color: rgb(var(--primitive-neutral-30)) transparent;
 }
+
+/* Row editor: one line, no wrapping, scrolls horizontally if text overflows */
+.row-editor .ProseMirror {
+  outline: none;
+  white-space: pre;
+  overflow-x: auto;
+  scrollbar-width: none;
+  line-height: 1.4;
+}
+.row-editor .ProseMirror p {
+  margin: 0;
+}
+.row-editor .ProseMirror a {
+  text-decoration: underline;
+  text-decoration-color: rgb(var(--primitive-neutral-40));
+  text-underline-offset: 2px;
+}

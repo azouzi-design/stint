@@ -3,14 +3,14 @@
 ## Build progress
 Work happens on the `prototype` branch. Each step is committed after review.
 
-- [ ] **Part 1: The calendar you can look at** *(built, in review)*
+- [x] **Part 1: The calendar you can look at**
   - [x] 1. Calendar grid, navbar shell, month navigation
   - [x] 2. Item model, localStorage persistence, sample data, every item type rendered (read-only)
-- [ ] **Part 2: Writing in it**
-  - [ ] 3. Typing in rows (TipTap, placeholder hint, Enter / Backspace, checking off)
-  - [ ] 4. `/` type picker + event shortcut
-  - [ ] 5. Inline links
-  - [ ] 6. Weekly / monthly sections behavior
+- [ ] **Part 2: Writing in it** *(built, in review)*
+  - [x] 3. Typing in rows (TipTap, placeholder hint, Enter / Backspace, checking off)
+  - [x] 4. `/` type picker + event shortcut
+  - [x] 5. Inline links
+  - [x] 6. Weekly / monthly sections behavior
 - [ ] **Part 3: Organizing**
   - [ ] 7. Projects
   - [ ] 8. Right-click menu + keyboard copy / cut / paste
@@ -115,7 +115,16 @@ Each holds three small labeled sections, stacked:
 - Typing `/` opens a type picker: note, event, routine, etc.
 - Typing `#` opens the project list (see Projects).
 - **Inline links:** in any row with text, the user can select part of the text and attach a link to it. This applies to every type, not only events.
+  - Selecting text shows a small "Link ⌘K" button below the row; clicking it or pressing `⌘K` opens a link field. An existing link can be edited or removed the same way.
+  - Pasting a URL over selected text links it; typing a URL turns it into a link automatically.
+  - Stored as markdown-style text (`Call [Jon](https://…)`).
 - **Event shortcut:** typing a time range at the start of a row (`5:00-5:30 Meet Dave`) turns it into an event automatically, the way the user writes in the spreadsheet today. `/event` also works. This is the starting approach and should be validated in the prototype.
+  - A URL at the end of an event row becomes the event's join link: `14:00-15:00 Call with Jon https://meet.google.com/abc`.
+  - An event without a time range is saved as a task.
+  - Editing an event shows it as text (`14:00-15:00 Call with Jon https://…`), so the time and link are changed by editing the text.
+- **Weekly / monthly sections:** the type is fixed by the section (Goals → goal, Notes → note, Backlog → task). No `/` picker or event shortcut there.
+- **Editing keys:** `Enter` saves and opens a new row below; `Escape` or clicking away saves and closes; `Backspace` on an empty row deletes it and moves to the row above. A row whose text is cleared is deleted.
+- **Clicking:** a row opens it for editing; a checkbox toggles it; a link opens in a new tab without editing the row.
 
 ### Ordering & moving
 - **Time-bound items** (events, focus sessions) sort themselves by time by default. The user can still drag them elsewhere.
@@ -154,7 +163,7 @@ Each holds three small labeled sections, stacked:
 | Styling | Tailwind CSS v4, `@/index.css` tokens, `cn()` (clsx + tailwind-merge), cva | The project palette is defined in OKLCH |
 | Fonts / icons | Geist, dseg (7-segment timer), pixelarticons via svgr | |
 | State + persistence | Zustand + `persist` middleware → localStorage | |
-| Row text editing | TipTap | Minimal: single line, text + links only. **Only the row being edited mounts an editor**; every other row renders static text. The Link extension handles inline links, the bubble menu / `Cmd+K` attaches a link to selected text, and the Suggestion utility powers the `/` type picker and `#` project list. |
+| Row text editing | TipTap | Minimal: single line, text + links only. **Only the row being edited mounts an editor**; every other row renders static text. The Link extension handles inline links (non-inclusive, so typing after a link doesn't extend it). The `/` picker and link popover are small custom components anchored with radix Popover; TipTap's Suggestion utility is still an option for `#` (which, unlike `/`, can appear mid-text). |
 | Drag & drop | dnd-kit (core + sortable) | Drag across days, the weekly and monthly cells, and within a day; auto-scrolls inside scrollable cells |
 | Menus / popovers | radix-ui | Context menu (copy / cut / paste / clear), the start-session and project popovers, the navbar menu |
 | Dates | date-fns | Month grid (weeks start Monday), mobile week navigation, timeframe math, routine repeats |
