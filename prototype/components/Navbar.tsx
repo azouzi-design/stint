@@ -1,5 +1,6 @@
 import { format, getISOWeek } from 'date-fns'
 import { DropdownMenu } from 'radix-ui'
+import CheckIcon from 'pixelarticons/svg/check.svg?react'
 import ChevronLeftIcon from 'pixelarticons/svg/chevron-left.svg?react'
 import ChevronRightIcon from 'pixelarticons/svg/chevron-right.svg?react'
 import MenuIcon from 'pixelarticons/svg/menu.svg?react'
@@ -7,7 +8,7 @@ import Logomark from '@/assets/brand/logomark-stint.svg?react'
 import { cn } from '@/lib/utils'
 import { weekLabel } from '../lib/dates'
 import { useIsMobile } from '../lib/useMedia'
-import { useStore } from '../store'
+import { useStore, type Dataset } from '../store'
 import { SessionControls } from './SessionControls'
 
 const ghost = 'flex h-28 items-center gap-6 rounded-6 px-8 text-[0.857rem] font-medium text-foreground-secondary hover:bg-muted'
@@ -86,7 +87,12 @@ function DesktopNavbar() {
   )
 }
 
+const menuItem =
+  'flex h-28 cursor-default items-center gap-8 rounded-4 px-8 text-[0.857rem] text-foreground-secondary outline-none data-[highlighted]:bg-muted'
+
 function Menu() {
+  const dataset = useStore((s) => s.dataset)
+  const switchDataset = useStore((s) => s.switchDataset)
   const resetToSample = useStore((s) => s.resetToSample)
   return (
     <DropdownMenu.Root>
@@ -99,14 +105,34 @@ function Menu() {
           sideOffset={6}
           className="z-30 min-w-[12rem] rounded-8 border border-border bg-popover p-4 shadow-md"
         >
-          <DropdownMenu.Item
-            onSelect={resetToSample}
-            className="flex h-28 cursor-default items-center rounded-4 px-8 text-[0.857rem] text-foreground-secondary outline-none data-[highlighted]:bg-muted"
-          >
-            Reset sample data
-          </DropdownMenu.Item>
+          <DropdownMenu.Label className="px-8 pt-4 pb-2 text-[0.786rem] text-foreground-tertiary">Calendar</DropdownMenu.Label>
+          <DropdownMenu.RadioGroup value={dataset} onValueChange={(v) => switchDataset(v as Dataset)}>
+            {DATASETS.map(([value, label]) => (
+              <DropdownMenu.RadioItem key={value} value={value} className={menuItem}>
+                <span className="flex size-16 shrink-0 items-center justify-center">
+                  <DropdownMenu.ItemIndicator>
+                    <CheckIcon className="size-16 text-foreground" />
+                  </DropdownMenu.ItemIndicator>
+                </span>
+                {label}
+              </DropdownMenu.RadioItem>
+            ))}
+          </DropdownMenu.RadioGroup>
+          {dataset === 'sample' && (
+            <>
+              <DropdownMenu.Separator className="-mx-4 my-4 h-px bg-border" />
+              <DropdownMenu.Item onSelect={resetToSample} className={menuItem}>
+                Reset sample data
+              </DropdownMenu.Item>
+            </>
+          )}
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
   )
 }
+
+const DATASETS: [Dataset, string][] = [
+  ['sample', 'Sample data'],
+  ['mine', 'My calendar'],
+]

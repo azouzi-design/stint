@@ -40,3 +40,23 @@
     touch-action: manipulation;
   }
 }
+
+/* Start overlay: the wash fades in, the bar rises slightly */
+.start-overlay {
+  animation: start-fade 160ms ease-out;
+}
+.start-bar {
+  animation: start-rise 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes start-fade {
+  from { opacity: 0; }
+}
+@keyframes start-rise {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .start-overlay,
+  .start-bar {
+    animation: none;
+  }
+}

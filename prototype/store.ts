@@ -5,7 +5,7 @@ import { dayKey, monthForWeek, monthWeeks, mondayOf, weekInMonth } from './lib/d
 import { plainText } from './lib/rich'
 import { containerDate, ruleDates } from './lib/routines'
 import { buildSeed, SEED_PROJECTS, seedRules } from './seed'
-import { sessionClock } from './lib/session'
+import { MIN_SAVED_MS, sessionClock } from './lib/session'
 import type { ActiveSession, Clipboard, Editing, Item, ItemFields, Project, Repeat, RoutineRule, Section } from './types'
 
 interface State {
@@ -22,6 +22,12 @@ interface State {
   shiftWeek: (delta: number) => void
   goToToday: () => void
   resetToSample: () => void
+
+  /** Which calendar is shown: the seeded sample, or the user's own (starts empty). Each keeps its own saved data. */
+  dataset: Dataset
+  /** Saved data of the calendar that isn't shown (null = never opened yet). */
+  stash: CalendarData | null
+  switchDataset: (dataset: Dataset) => void
 
   /** Row currently being edited (not persisted). */
   editing: Editing | null
@@ -61,8 +67,8 @@ interface State {
 
   /** The running focus session, if any. */
   activeSession: ActiveSession | null
-  /** Creates an active session row in today's cell and starts the countdown. */
-  startSession: (minutes: number) => void
+  /** Creates an active session row in today's cell and starts the countdown (null = no timecap: counts up). */
+  startSession: (minutes: number | null) => void
   pauseSession: () => void
   resumeSession: () => void
   /** Called when the countdown reaches zero: the session then waits for the user. */
@@ -72,6 +78,12 @@ interface State {
   /** Finish now (stopped early) or at the time-up point. Sessions under a minute are discarded. */
   finishSession: () => void
 }
+
+export type Dataset = 'sample' | 'mine'
+type CalendarData = Pick<State, 'items' | 'projects' | 'rules'>
+
+const sampleData = (): CalendarData => ({ items: buildSeed(), projects: SEED_PROJECTS, rules: seedRules() })
+const emptyData = (): CalendarData => ({ items: [], projects: [], rules: [] })
 
 // ─── Pure helpers ──────────────────────────────────────────────────────
 
@@ -209,7 +221,27 @@ export const useStore = create<State>()(
         get().ensureRoutines()
       },
       resetToSample: () => {
-        set({ items: buildSeed(), projects: SEED_PROJECTS, rules: seedRules(), editing: null, clipboard: null })
+        set({ ...sampleData(), editing: null, clipboard: null })
+        get().ensureRoutines()
+      },
+
+      dataset: 'sample',
+      stash: null,
+      switchDataset: (dataset) => {
+        const s = get()
+        if (dataset === s.dataset) return
+        // A running session lives in the current calendar: finish it before leaving.
+        s.finishSession()
+        const { items, projects, rules } = get()
+        const next = get().stash ?? (dataset === 'sample' ? sampleData() : emptyData())
+        set({
+          ...next,
+          dataset,
+          stash: { items, projects, rules },
+          editing: null,
+          clipboard: null,
+          projectPickerFor: null,
+        })
         get().ensureRoutines()
       },
 
@@ -444,7 +476,7 @@ export const useStore = create<State>()(
       markTimeUp: () =>
         set((s) => {
           const a = s.activeSession
-          if (!a || a.timeUpAt || a.pausedAt) return {}
+          if (!a || a.plannedMin === null || a.timeUpAt || a.pausedAt) return {}
           // The exact moment it hit zero (the check may run a little late in a background tab).
           const at = Date.parse(a.startedAt) + a.pausedMs + a.plannedMin * 60_000
           return { activeSession: { ...a, timeUpAt: new Date(Math.min(at, Date.now())).toISOString() } }
@@ -452,7 +484,7 @@ export const useStore = create<State>()(
       extendSession: (minutes) =>
         set((s) => {
           const a = s.activeSession
-          if (!a) return {}
+          if (!a || a.plannedMin === null) return {}
           const waited = a.timeUpAt ? Date.now() - Date.parse(a.timeUpAt) : 0
           return { activeSession: { ...a, plannedMin: a.plannedMin + minutes, pausedMs: a.pausedMs + waited, timeUpAt: null } }
         }),
@@ -464,7 +496,7 @@ export const useStore = create<State>()(
         set((s) => ({
           activeSession: null,
           items:
-            focusedMs < 60_000
+            focusedMs < MIN_SAVED_MS
               ? s.items.filter((i) => i.id !== a.itemId) // started by accident: discard
               : s.items.map((i) =>
                   i.id === a.itemId && i.type === 'session'
@@ -476,13 +508,16 @@ export const useStore = create<State>()(
     }),
     {
       name: 'stint-prototype',
-      // Bump when the data shape changes: old saved data is discarded and re-seeded.
+      // Bump when the data shape changes: old saved data is discarded and re-seeded
+      // (this also wipes "My calendar", so prefer migrating it if it holds real content).
       version: 3,
-      migrate: () => ({ items: buildSeed(), projects: SEED_PROJECTS, rules: seedRules() }) as Partial<State>,
+      migrate: () => ({ ...sampleData(), dataset: 'sample', stash: null }) as Partial<State>,
       partialize: (s) => ({
         items: s.items,
         projects: s.projects,
         rules: s.rules,
+        dataset: s.dataset,
+        stash: s.stash,
         clipboard: s.clipboard,
         activeSession: s.activeSession, // a refresh keeps the session running
       }),

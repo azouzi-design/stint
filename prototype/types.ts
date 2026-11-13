@@ -47,7 +47,8 @@ export interface SessionItem extends BaseItem {
 /** The running focus session (one at a time). Everything is derived from timestamps. */
 export interface ActiveSession {
   itemId: string
-  plannedMin: number
+  /** null = no timecap: the session counts up and never reaches time's up. */
+  plannedMin: number | null
   startedAt: string // ISO
   pausedAt: string | null // ISO while paused
   pausedMs: number // total paused time so far

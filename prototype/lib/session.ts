@@ -2,20 +2,34 @@ import type { ActiveSession } from '../types'
 
 export type Phase = 'running' | 'paused' | 'timeUp'
 
-/** Focused time, remaining time and phase of a session at `now`. */
+/** Sessions stopped with less focus than this are discarded (no row is kept). */
+export const MIN_SAVED_MS = 60_000
+
+/** Focused time, remaining time (null without a timecap), the time to display and phase of a session at `now`. */
 export function sessionClock(a: ActiveSession, now = Date.now()) {
   const start = Date.parse(a.startedAt)
   const end = a.timeUpAt ? Date.parse(a.timeUpAt) : now
   const pausedNow = a.pausedAt ? end - Date.parse(a.pausedAt) : 0
   const focusedMs = Math.max(0, end - start - a.pausedMs - pausedNow)
-  const remainingMs = Math.max(0, a.plannedMin * 60_000 - focusedMs)
+  const remainingMs = a.plannedMin === null ? null : Math.max(0, a.plannedMin * 60_000 - focusedMs)
   const phase: Phase = a.timeUpAt ? 'timeUp' : a.pausedAt ? 'paused' : 'running'
-  return { focusedMs, remainingMs, phase }
+  // Capped sessions count down; uncapped ones count up.
+  const displayMs = remainingMs ?? focusedMs
+  return { focusedMs, remainingMs, displayMs, phase }
 }
 
-/** Wall-clock time at which a running session reaches zero. */
+/** Wall-clock time at which a running session reaches zero (null without a timecap). */
 export function timeUpAt(a: ActiveSession, now = Date.now()) {
-  return now + sessionClock(a, now).remainingMs
+  const { remainingMs } = sessionClock(a, now)
+  return remainingMs === null ? null : now + remainingMs
+}
+
+/** Typed duration → minutes (1–600), or null. "20" / "20m" = minutes, "1h" / "1.5h" = hours. */
+export function parseDuration(text: string): number | null {
+  const m = text.trim().toLowerCase().match(/^(\d{1,3}(?:\.\d)?)\s*(m|min|h|hr)?$/)
+  if (!m) return null
+  const minutes = Math.round(Number(m[1]) * (m[2]?.startsWith('h') ? 60 : 1))
+  return minutes >= 1 && minutes <= 600 ? minutes : null
 }
 
 /** 1_453_000 → "24:13", 3_725_000 → "1:02:05" */

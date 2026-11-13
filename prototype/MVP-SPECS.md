@@ -1,7 +1,7 @@
 # Stint — MVP Prototype Spec
 
 ## Build progress
-Work happens on the `prototype` branch. Each step is committed after review.
+Parts 1–5 were built on the `prototype` branch and merged into `main`. Later iterations go straight to `main`, which deploys the public prototype (https://stint-prototype.vercel.app). Each step is committed after review.
 
 - [x] **Part 1: The calendar you can look at**
   - [x] 1. Calendar grid, navbar shell, month navigation
@@ -21,13 +21,18 @@ Work happens on the `prototype` branch. Each step is committed after review.
   - [x] 12. Pop-out timer
 - [x] **Part 5: Mobile**
   - [x] 13. Weekly view
+- [x] **Part 6: Iteration**
+  - [x] 14. Calendar switcher in the menu: sample data / my calendar
+  - [x] 15. Start overlay (`⌘K` / `Ctrl+K`), typed duration with Min / Hr, no timecap
+  - [x] 16. Custom extend at time's up, Discard during a session's first minute
+  - [x] 17. Minimal one-row pop-out timer (all states, Back to Stint, Hide timer)
 
 ## Purpose
 An interactive front-end for testing, playing with, and defining what the product should eventually be.
 
 **Out of scope:** backend, database connections, accounts/auth, or any advanced infrastructure.
 
-**Data:** persisted in localStorage, so a refresh keeps it. On first load the calendar is seeded with realistic sample data (tasks, events, routines, notes, finished sessions, projects).
+**Data:** persisted in localStorage, so a refresh keeps it. There are two calendars, picked from the navbar menu: **Sample data**, seeded with realistic content (tasks, events, routines, notes, finished sessions, projects), and **My calendar**, which starts empty. Each keeps its own saved data.
 
 **Guiding principle:** simplicity. Every addition should keep the calendar feeling as light and fast as a spreadsheet.
 
@@ -43,9 +48,9 @@ An interactive front-end for testing, playing with, and defining what the produc
 ## Page structure
 
 ### Navbar
-- **Left:** Stint logomark + a small, seamless "start a Stint" button. Once a session starts, the running counter shows in its place in the navbar.
+- **Left:** Stint logomark + a small, seamless "Start a Stint" button showing its shortcut (`⌘K` / `Ctrl K`). Once a session starts, a compact running counter (14px, 7-segment font) and its controls show in its place.
 - **Month navigation:** previous / next month + a "Today" control in the navbar.
-- **Far right:** menu icon. Holds anything that doesn't fit the calendar view (profile, advanced settings, etc.). Its contents will be defined later.
+- **Far right:** menu icon. Holds anything that doesn't fit the calendar view (profile, advanced settings, etc.). For now it holds a **calendar switcher** — *Sample data* (seeded, with "Reset sample data") or *My calendar* (starts empty; whatever you add is saved). Each calendar keeps its own saved items, projects and routines; switching finishes a running session first.
 
 ### Calendar (desktop: month)
 - **Columns:** Monday → Sunday, plus an 8th column per week for **Weekly goals, notes, backlog**.
@@ -87,7 +92,7 @@ The goal is to keep the speed and density of the spreadsheet while adding struct
 | Type | Fields / behavior |
 |---|---|
 | **Task** | Checkable. The default type. Unfinished tasks stay on their day (no carry-over). |
-| **Focus session** | States: `active` (running now) or `finished`. Cannot be scheduled ahead of time; sessions only exist once started. Can be paused, extended, and stopped early. There's no separate name: a session is labeled automatically by its timeframe and duration, e.g. `5:00–6:30 / 1.5h`. |
+| **Focus session** | States: `active` (running now) or `finished`. Cannot be scheduled ahead of time; sessions only exist once started. Can be paused, extended, stopped early, or run with no timecap (counts up until stopped). There's no separate name: a session is labeled automatically by its timeframe and duration, e.g. `5:00–6:30 / 1.5h`. |
 | **Note** | Free text |
 | **Event** | Title, timeframe (`5:00–5:30`), link. The duration is calculated from the timeframe. The link opens in one click, so the user can join the meeting as it starts. |
 | **Routine** | A task that repeats daily, weekly, or monthly. Each copy is checked off separately. The user can turn it off from any copy. Shown as a task with a repeat icon. See **Routines** below. |
@@ -167,28 +172,40 @@ Each holds three small labeled sections, stacked:
 - `Backspace` on an empty row: delete it.
 
 ### Focus session flow
-1. The user clicks the navbar "start a Stint" button and sets the duration: presets 25 / 50 / 90 min, or a custom value (1–600 min).
+1. The user clicks the navbar "Start a Stint" button, or presses `⌘K` (Mac) / `Ctrl+K` (Windows). The button shows the shortcut. (Inside a row being edited, `⌘K` still adds a link.)
+   - A soft light overlay covers the calendar, with one large field centered on screen: the Stint logomark, the duration input (7-segment font), a **Min / Hr** switch, a **No timecap** toggle, and Start.
+   - The input is focused right away. Keyboard: type the number, `M` / `H` switch the unit (so `90m` or `1.5h` can be typed straight through), `N` toggles no timecap, `Enter` starts, `Esc` or a click outside closes.
+   - Duration: 1 min to 10 hours; hours accept one decimal. Typing a number turns no timecap back off.
+   - **No timecap:** the session has no limit. The counter counts up (focused time) instead of down, and there's no time's up: the user stops it when done.
 2. The session starts:
    - An `active` session row appears in today's cell, placed by time.
    - The counter runs in the navbar and in the tab title (`24:13 · Stint`).
    - A **pop-out timer** opens automatically (see below).
 3. While it runs, the user can pause, resume, or stop early. A session stopped early is saved as `finished` with the time actually worked.
    - The duration shown on a session is focused time: pauses aren't counted.
-   - A session stopped under 1 minute is discarded (no row is kept).
+   - A session stopped under 1 minute is discarded (no row is kept). During that first minute the stop button reads **Discard** (× icon) instead of Stop, so it's clear nothing will be saved.
    - A running session survives a page refresh.
-4. **When the counter reaches zero:**
+4. **When the counter reaches zero** (sessions with a timecap only):
    - A soft notification sound plays.
    - The browser tab is highlighted and its title text changes.
-   - The app waits for the user to respond. The user can **extend** the session (+5m / +15m) or **confirm** it's finished (Done).
+   - The app waits for the user to respond. The user can **extend** the session or **confirm** it's finished (Done).
+   - Extend: a small field next to Done (navbar and pop-out). Type any duration and press Enter: `20` / `20m` = minutes, `1h` / `1.5h` = hours (up to 10 h). `⌘K` / `Ctrl+K` jumps to it.
    - Time spent waiting after time's up isn't counted: extending continues from the moment the counter hit zero.
 5. Only once the user confirms is the row marked `finished`. Its end time is the moment the counter hit zero, not when the user clicked Done.
 
 ### Pop-out timer
-- It opens as soon as a session starts, in a small always-on-top window, so the user stays aware of the active session while moving between desktop apps and browser tabs.
-- Priority: as seamless and simple as possible.
+- It opens as soon as a session starts: a tiny one-row window (about 240 × 40 px, the smallest the browser allows), so the user stays aware of the session while moving between apps and tabs.
+- Priority: as small and simple as possible.
+- Layout: state dot + counter on the left, icon buttons on the right. Hovering a button swaps the counter for the button's label (the window is too small for floating tooltips).
+- States:
+  - **Running:** green pulsing dot, counter (counts down; counts up with no timecap). Pause, Stop (or Discard during the first minute).
+  - **Paused:** grey dot, dimmed counter. Resume, Stop / Discard.
+  - **Time's up:** amber background and dot, "Time's up". Done (✓) and a compact extend field (type `20m` / `1h`, Enter).
+  - **Ended:** shows "Saved · 25m focused" or "Discarded" for ~1.5 s, then the window closes.
+- Always shown: **Back to Stint** (↩: brings the tab to the front; the pop-out stays) and **Hide timer** (closes the pop-out without switching to the browser; the session carries on in the navbar).
+- The browser's frame on top of the pop-out (site name + close) can't be removed in a browser. A frameless floating timer needs a desktop app (e.g. a Tauri / Electron wrapper): see open questions.
+- Once hidden or closed, a pop-out button next to the navbar counter reopens it.
 - Implementation: the browser's Document Picture-in-Picture API (Chromium browsers). The click that starts the session is what opens the window.
-- It shows the state, the counter, and the same controls as the navbar (pause / resume, stop; Done / extend at time's up).
-- If the user closes it, a pop-out button next to the navbar counter reopens it. It closes on its own when the session finishes.
 - **Safari / Firefox:** no extra design for now. The rest of the session flow still works there; there's just no pop-out (see open questions).
 
 ## Tech stack
@@ -201,7 +218,7 @@ Each holds three small labeled sections, stacked:
 | State + persistence | Zustand + `persist` middleware → localStorage | |
 | Row text editing | TipTap | Minimal: single line, text + links only. **Only the row being edited mounts an editor**; every other row renders static text. The Link extension handles inline links (non-inclusive, so typing after a link doesn't extend it). The `/` picker and link popover are small custom components anchored with radix Popover; TipTap's Suggestion utility is still an option for `#` (which, unlike `/`, can appear mid-text). |
 | Drag & drop | dnd-kit (core + sortable) | Drag across days, the weekly and monthly cells, and within a day; auto-scrolls inside scrollable cells |
-| Menus / popovers | radix-ui | Context menu (copy / cut / paste / clear), the start-session and project popovers, the navbar menu |
+| Menus / popovers | radix-ui | Context menu (copy / cut / paste / clear), the start overlay (Dialog), the project popover, the navbar menu (with the calendar switcher) |
 | Dates | date-fns | Month grid (weeks start Monday), mobile week navigation, timeframe math, routine repeats |
 | Backend | None in the prototype | Supabase stays installed for the real product later |
 
@@ -221,3 +238,4 @@ Any task checked off while a session is `active` gets attributed to that session
 ## Open questions
 - How should focus sessions and tasks be linked? (The tentative version above is a stand-in.)
 - What should replace the pop-out timer in browsers without Document Picture-in-Picture (Safari, Firefox)?
+- A truly frameless floating timer (no browser title bar): only possible outside the browser. Options: a desktop wrapper (Tauri / Electron: frameless, always-on-top window), or a small native menu-bar companion app.

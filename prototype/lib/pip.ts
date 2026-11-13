@@ -1,9 +1,10 @@
-// Pop-out timer: Document Picture-in-Picture (Chromium browsers). The window
-// stays on top of other apps. It must be opened from a click.
+// Pop-out timer: Document Picture-in-Picture (Chromium browsers). The window stays on top
+// of other apps. It must be opened from a click. The browser's own frame (title bar with the
+// site name) can't be removed: browsers keep it so a site can't pass itself off as another app.
 import { create } from 'zustand'
 
 interface DocumentPictureInPicture {
-  requestWindow(options?: { width?: number; height?: number }): Promise<Window>
+  requestWindow(options?: { width?: number; height?: number; disallowReturnToOpener?: boolean }): Promise<Window>
   window: Window | null
 }
 declare global {
@@ -16,24 +17,46 @@ export const pipSupported = () => typeof window !== 'undefined' && 'documentPict
 
 export const usePip = create<{ win: Window | null }>(() => ({ win: null }))
 
-/** Open the pop-out (call from a click handler). Resolves to null when unsupported. */
-export async function openPip(): Promise<Window | null> {
-  const api = window.documentPictureInPicture
-  if (!api) return null
-  if (api.window) return api.window
-  const win = await api.requestWindow({ width: 240, height: 136 })
-  // Copy the page's styles (tokens, fonts, Tailwind) into the new window.
+// Smallest size browsers allow is a bit larger; they clamp it.
+const WIDTH = 232
+const HEIGHT = 48
+
+/** Copy the page's styles (tokens, fonts, Tailwind) into the new window and track it. */
+function adopt(win: Window) {
   for (const node of document.head.querySelectorAll('style, link[rel="stylesheet"]')) {
     win.document.head.appendChild(node.cloneNode(true))
   }
   win.document.title = 'Stint'
-  win.document.body.className = 'm-0 bg-background font-geist text-foreground'
-  win.addEventListener('pagehide', () => usePip.setState({ win: null }))
+  win.document.body.className = 'm-0 overflow-hidden bg-background font-geist text-foreground'
+  win.addEventListener('pagehide', () => {
+    if (usePip.getState().win === win) usePip.setState({ win: null })
+  })
   usePip.setState({ win })
   return win
+}
+
+/** Open the always-on-top pop-out (call from a click). Resolves to null when unsupported. */
+export async function openPip(): Promise<Window | null> {
+  const api = window.documentPictureInPicture
+  if (!api) return null
+  if (api.window) return api.window
+  // Our own "back to tab" button replaces the browser's.
+  const win = await api.requestWindow({ width: WIDTH, height: HEIGHT, disallowReturnToOpener: true })
+  return adopt(win)
 }
 
 export function closePip() {
   usePip.getState().win?.close()
   usePip.setState({ win: null })
+}
+
+/** From a click inside the pop-out: bring the Stint tab back to the front. */
+export function backToTab() {
+  const win = usePip.getState().win as (Window & { opener: Window | null }) | null
+  try {
+    win?.opener?.focus()
+  } catch {
+    /* not allowed: fall through */
+  }
+  window.focus()
 }

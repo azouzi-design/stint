@@ -17,8 +17,10 @@ export function SessionController() {
   // heavily throttled in background tabs; it runs in the pop-out window when one is open.
   useEffect(() => {
     if (!session || session.pausedAt || session.timeUpAt) return
+    const at = timeUpAt(session)
+    if (at === null) return // no timecap
     const w = pipWin ?? window
-    const t = w.setTimeout(() => useStore.getState().markTimeUp(), Math.max(0, timeUpAt(session) - Date.now()))
+    const t = w.setTimeout(() => useStore.getState().markTimeUp(), Math.max(0, at - Date.now()))
     return () => w.clearTimeout(t)
   }, [session, pipWin])
 
@@ -34,9 +36,9 @@ export function SessionController() {
       document.title = BASE_TITLE
       return
     }
-    const { remainingMs, phase } = sessionClock(session, now)
+    const { displayMs, phase } = sessionClock(session, now)
     if (phase === 'timeUp') document.title = Math.floor(now / 1000) % 2 ? "Time's up · Stint" : "● Time's up"
-    else document.title = `${phase === 'paused' ? 'Paused · ' : ''}${formatClock(remainingMs)} · Stint`
+    else document.title = `${phase === 'paused' ? 'Paused · ' : ''}${formatClock(displayMs)} · Stint`
   }, [session, now])
 
   return null
