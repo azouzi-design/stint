@@ -4,7 +4,12 @@
 import { create } from 'zustand'
 
 interface DocumentPictureInPicture {
-  requestWindow(options?: { width?: number; height?: number; disallowReturnToOpener?: boolean }): Promise<Window>
+  requestWindow(options?: {
+    width?: number
+    height?: number
+    disallowReturnToOpener?: boolean
+    preferInitialWindowPlacement?: boolean
+  }): Promise<Window>
   window: Window | null
 }
 declare global {
@@ -17,9 +22,11 @@ export const pipSupported = () => typeof window !== 'undefined' && 'documentPict
 
 export const usePip = create<{ win: Window | null }>(() => ({ win: null }))
 
-// Smallest size browsers allow is a bit larger; they clamp it.
-const WIDTH = 232
-const HEIGHT = 48
+// As small as Chrome allows: it won't go narrower than 240 px. With preferInitialWindowPlacement
+// Chrome counts the height differently: the content area is HEIGHT − 56 px (measured), so
+// 84 leaves a 28 px row, just enough for the 24 px buttons.
+const WIDTH = 240
+const HEIGHT = 84
 
 /** Copy the page's styles (tokens, fonts, Tailwind) into the new window and track it. */
 function adopt(win: Window) {
@@ -41,7 +48,13 @@ export async function openPip(): Promise<Window | null> {
   if (!api) return null
   if (api.window) return api.window
   // Our own "back to tab" button replaces the browser's.
-  const win = await api.requestWindow({ width: WIDTH, height: HEIGHT, disallowReturnToOpener: true })
+  // preferInitialWindowPlacement: always open at this size; Chrome otherwise reuses the last size.
+  const win = await api.requestWindow({
+    width: WIDTH,
+    height: HEIGHT,
+    disallowReturnToOpener: true,
+    preferInitialWindowPlacement: true,
+  })
   return adopt(win)
 }
 

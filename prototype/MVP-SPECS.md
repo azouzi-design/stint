@@ -194,15 +194,15 @@ Each holds three small labeled sections, stacked:
 5. Only once the user confirms is the row marked `finished`. Its end time is the moment the counter hit zero, not when the user clicked Done.
 
 ### Pop-out timer
-- It opens as soon as a session starts: a tiny one-row window (about 240 × 40 px, the smallest the browser allows), so the user stays aware of the session while moving between apps and tabs.
+- It opens as soon as a session starts: a tiny one-row window (240 px wide, the narrowest Chrome allows), so the user stays aware of the session while moving between apps and tabs.
 - Priority: as small and simple as possible.
-- Layout: state dot + counter on the left, icon buttons on the right. Hovering a button swaps the counter for the button's label (the window is too small for floating tooltips).
+- Layout: state dot + counter on the left, a single ⋮ button on the right. Clicking it opens a vertical menu of the actions (icon + label); the window grows to fit it and shrinks back when it closes.
 - States:
-  - **Running:** green pulsing dot, counter (counts down; counts up with no timecap). Pause, Stop (or Discard during the first minute).
-  - **Paused:** grey dot, dimmed counter. Resume, Stop / Discard.
-  - **Time's up:** amber background and dot, "Time's up". Done (✓) and a compact extend field (type `20m` / `1h`, Enter).
+  - **Running:** green pulsing dot, counter (counts down; counts up with no timecap). Menu: Pause, Stop (or Discard during the first minute), Back to Stint, Hide timer.
+  - **Paused:** grey dot, dimmed counter. Menu: Resume, Stop / Discard, Back to Stint, Hide timer.
+  - **Time's up:** amber background and dot, "Time's up". Done (✓) and a compact extend field (type `20m` / `1h`, Enter) stay in the row; the menu holds Back to Stint and Hide timer.
   - **Ended:** shows "Saved · 25m focused" or "Discarded" for ~1.5 s, then the window closes.
-- Always shown: **Back to Stint** (↩: brings the tab to the front; the pop-out stays) and **Hide timer** (closes the pop-out without switching to the browser; the session carries on in the navbar).
+- Always in the menu: **Back to Stint** (↩: brings the tab to the front; the pop-out stays) and **Hide timer** (closes the pop-out without switching to the browser; the session carries on in the navbar).
 - The browser's frame on top of the pop-out (site name + close) can't be removed in a browser. A frameless floating timer needs a desktop app (e.g. a Tauri / Electron wrapper): see open questions.
 - Once hidden or closed, a pop-out button next to the navbar counter reopens it.
 - Implementation: the browser's Document Picture-in-Picture API (Chromium browsers). The click that starts the session is what opens the window.
