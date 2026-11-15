@@ -70,6 +70,35 @@ export function chime() {
   }
 }
 
+// ─── Desktop notification ──────────────────────────────────────────────
+// A system notification at time's up, fired even when Stint is in front: the user must
+// not miss it. Permission is asked on the Start click (Safari and Firefox require a click).
+const canNotify = () => typeof window !== 'undefined' && 'Notification' in window
+
+export function primeNotifications() {
+  if (!canNotify() || Notification.permission !== 'default') return
+  Notification.requestPermission().catch(() => {})
+}
+
+/** Returns the notification so it can be closed once the user responds in the app. */
+export function notifyTimeUp(plannedMin: number | null): Notification | null {
+  if (!canNotify() || Notification.permission !== 'granted') return null
+  try {
+    const n = new Notification("Time's up", {
+      body: plannedMin ? `Your ${plannedMin} min focus session is over.` : 'Your focus session is over.',
+      tag: 'stint-time-up', // replaces, never stacks
+      requireInteraction: true, // stays until dismissed (where the OS allows it)
+    })
+    n.onclick = () => {
+      window.focus()
+      n.close()
+    }
+    return n
+  } catch {
+    return null
+  }
+}
+
 // ─── Tab highlight ─────────────────────────────────────────────────────
 // Browsers can't highlight a tab directly: we change its title and favicon.
 const ATTENTION_ICON =

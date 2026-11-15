@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { usePip } from '../lib/pip'
-import { chime, formatClock, sessionClock, setAttentionFavicon, timeUpAt } from '../lib/session'
+import { chime, formatClock, notifyTimeUp, sessionClock, setAttentionFavicon, timeUpAt } from '../lib/session'
 import { useNow } from '../lib/useNow'
 import { useStore } from '../store'
 
@@ -28,7 +28,12 @@ export function SessionController() {
     if (!timeUp) return
     chime()
     setAttentionFavicon(true)
-    return () => setAttentionFavicon(false)
+    const notification = notifyTimeUp(useStore.getState().activeSession?.plannedMin ?? null)
+    // Done / extend in the app: the notification is no longer relevant.
+    return () => {
+      setAttentionFavicon(false)
+      notification?.close()
+    }
   }, [timeUp])
 
   useEffect(() => {

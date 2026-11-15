@@ -4,8 +4,8 @@ import PlayIcon from 'pixelarticons/svg/play.svg?react'
 import Logomark from '@/assets/brand/logomark-stint.svg?react'
 import { cn } from '@/lib/utils'
 import { openPip } from '../lib/pip'
-import { primeAudio } from '../lib/session'
-import { isMac, useStartOverlay } from '../lib/startOverlay'
+import { primeAudio, primeNotifications } from '../lib/session'
+import { isMac, useStartOverlay, useTimeUpOverlay } from '../lib/startOverlay'
 import { useStore } from '../store'
 
 const MAX_MIN = 600 // 10 hours
@@ -17,6 +17,7 @@ function start(minutes: number | null) {
   primeAudio()
   useStore.getState().startSession(minutes)
   openPip().catch(() => {}) // unsupported browsers (Safari, Firefox): no pop-out
+  primeNotifications() // after openPip: it needs the click first
 }
 
 /** Minutes for the typed value, or null when it isn't a valid duration. */
@@ -34,8 +35,8 @@ function useStartShortcut() {
       if (e.defaultPrevented || e.key.toLowerCase() !== 'k' || !(isMac ? e.metaKey : e.ctrlKey)) return
       e.preventDefault()
       const session = useStore.getState().activeSession
-      // Time's up: jump to the extend field instead.
-      if (session?.timeUpAt) document.querySelector<HTMLInputElement>('[data-extend-input]')?.focus()
+      // Time's up: bring back the time's-up overlay (if hidden) instead.
+      if (session?.timeUpAt) useTimeUpOverlay.setState({ hiddenFor: null })
       if (session) return
       const { open, setOpen } = useStartOverlay.getState()
       setOpen(!open)

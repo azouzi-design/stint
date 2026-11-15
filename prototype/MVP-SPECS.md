@@ -187,9 +187,12 @@ Each holds three small labeled sections, stacked:
    - A running session survives a page refresh.
 4. **When the counter reaches zero** (sessions with a timecap only):
    - A soft notification sound plays.
+   - A desktop notification ("Time's up · Your 25 min focus session is over.") fires every time, even when Stint is in front: this moment must not be missed, so it's fine to alert from several places at once. No buttons; clicking it brings Stint forward. It stays until dismissed where the OS allows, and closes itself once the user responds in the app.
+   - Permission is asked on the first Start click. If it's denied or the OS hides it (Do Not Disturb, Focus), the sound, tab title and favicon still alert the user.
    - The browser tab is highlighted and its title text changes.
    - The app waits for the user to respond. The user can **extend** the session or **confirm** it's finished (Done).
-   - Extend: a small field next to Done (navbar and pop-out). Type any duration and press Enter: `20` / `20m` = minutes, `1h` / `1.5h` = hours (up to 10 h). `⌘K` / `Ctrl+K` jumps to it.
+   - **Time's-up overlay:** the same full-screen overlay as the start, in amber: pulsing dot, `0:00`, "Time's up · 25 min focused", an extend field (focused) and Done. Enter = Done when the field is empty, or extends by what's typed. Clicking outside doesn't close it; `Esc` hides it, leaving Done + extend in the navbar, and `⌘K` / `Ctrl+K` brings it back.
+   - Extend: type any duration and press Enter: `20` / `20m` = minutes, `1h` / `1.5h` = hours (up to 10 h). Also available next to Done in the navbar and the pop-out.
    - Time spent waiting after time's up isn't counted: extending continues from the moment the counter hit zero.
 5. Only once the user confirms is the row marked `finished`. Its end time is the moment the counter hit zero, not when the user clicked Done.
 
@@ -225,7 +228,7 @@ Each holds three small labeled sections, stacked:
 **No library needed:**
 - **Timer:** calculated from the start timestamp, so it stays accurate while the tab is in the background.
 - **Pop-out:** the native Document Picture-in-Picture API + a React portal (stylesheets are copied into the new window).
-- **End-of-session alert:** Web Audio / a short sound file, `document.title`, a favicon swap.
+- **End-of-session alert:** Web Audio / a short sound file, `document.title`, a favicon swap, and the Notifications API (`new Notification`, no service worker or server needed while the tab is open).
 - **Mobile week swipe:** CSS scroll-snap.
 - **Event shortcut (`5:00-5:30 …`):** a regex.
 - **Routine repeats:** computed with date-fns.

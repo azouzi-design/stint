@@ -3,6 +3,7 @@ import { Navbar } from './components/Navbar'
 import { PipPortal } from './components/PipTimer'
 import { SessionController } from './components/SessionController'
 import { StartOverlay } from './components/StartOverlay'
+import { TimeUpOverlay } from './components/TimeUpOverlay'
 
 export default function App() {
   return (
@@ -10,6 +11,7 @@ export default function App() {
       <SessionController />
       <PipPortal />
       <StartOverlay />
+      <TimeUpOverlay />
       <Navbar />
       <main>
         <Calendar />
