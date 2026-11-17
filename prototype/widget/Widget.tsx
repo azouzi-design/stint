@@ -21,6 +21,7 @@ import { formatClock, MIN_SAVED_MS, parseDuration, primeAudio, primeNotification
 import { useNow } from '../lib/useNow'
 import { useStore } from '../store'
 import { hideWidget, inDesktopApp, openStint, resizeWidget, showWidget } from './tauri'
+import { useAutoUpdate } from './updater'
 
 /** How long "Saved" / "Discarded" shows before going back to the start row. */
 const END_MS = 1600
@@ -40,6 +41,7 @@ const iconBtn =
  */
 export function WidgetApp() {
   const ref = useRef<HTMLDivElement>(null)
+  useAutoUpdate()
 
   // Frameless, transparent window: the page draws its own rounded card.
   useLayoutEffect(() => {

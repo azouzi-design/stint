@@ -1,0 +1,98 @@
+# Builds the Stint desktop app (prototype/desktop) for Mac + Windows and publishes a GitHub Release:
+#   - the installers, the signed update bundles and latest.json (read by the in-app auto-updater);
+#   - fixed-name copies the web app's Download button links to: Stint-mac.dmg, Stint-windows.exe.
+# The release stays a draft until both builds succeed, so users never see a half-finished one.
+#
+# Run: bump `version` in prototype/desktop/src-tauri/tauri.conf.json, push, then
+#   Actions → "Desktop release" → Run workflow   (or: gh workflow run desktop-release.yml)
+# Needs the repo secret TAURI_SIGNING_PRIVATE_KEY (the updater key, ~/.tauri/stint-updater.key).
+name: Desktop release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+      id: ${{ steps.release.outputs.id }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version=$(node -p "require('./prototype/desktop/src-tauri/tauri.conf.json').version")
+          tag="desktop-v$version"
+          gh release create "$tag" --draft --target "$GITHUB_SHA" --title "Stint desktop $version" --notes "$(cat <<'EOF'
+          **Install**
+          - **Mac:** download `Stint-mac.dmg`, open it and drag Stint into Applications. The first time, macOS blocks it (not signed by Apple yet): System Settings → Privacy & Security → **Open Anyway**.
+          - **Windows:** download `Stint-windows.exe` and run it. If Windows shows "Windows protected your PC", click **More info** → **Run anyway**.
+
+          Then sign in from the widget's ⋮ menu with the same email as on https://stint-prototype.vercel.app. Installed apps update themselves.
+          EOF
+          )"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "id=$(gh release view "$tag" --json databaseId -q .databaseId)" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: create-release
+    strategy:
+      fail-fast: false
+      max-parallel: 1 # both builds add their entry to latest.json: one at a time, so neither overwrites the other
+      matrix:
+        include:
+          - os: macos-latest
+            args: --target universal-apple-darwin
+            installer: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+            name: Stint-mac.dmg
+          - os: windows-latest
+            args: ''
+            installer: src-tauri/target/release/bundle/nsis/*-setup.exe
+            name: Stint-windows.exe
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: prototype/desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.os == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: prototype/desktop/src-tauri -> target
+      - run: npm ci
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
+        with:
+          projectPath: prototype/desktop
+          tauriScript: npx tauri
+          args: ${{ matrix.args }}
+          releaseId: ${{ needs.create-release.outputs.id }}
+          updaterJsonPreferNsis: true
+      - name: Upload the fixed-name copy (the web app's Download button)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp ${{ matrix.installer }} "${{ matrix.name }}"
+          gh release upload "${{ needs.create-release.outputs.tag }}" "${{ matrix.name }}" --clobber
+
+  publish:
+    needs: [create-release, build]
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${{ needs.create-release.outputs.tag }}" --repo "$GITHUB_REPOSITORY" --draft=false --latest

@@ -206,7 +206,8 @@ Each holds three small labeled sections, stacked:
 - Code: the page `prototype/widget` (`/?widget`) inside the Tauri shell `prototype/desktop`.
 - States (one row): **Idle** (duration field + Start), **Running** (green dot, counter, pause), **Paused** (grey dot, dimmed counter, resume), **Time's up** (amber row, Done ✓ + compact extend field), **Ended** ("Saved · 25m" / "Discarded" for ~1.5 s). The ⋮ menu holds the rest (Stop / Discard, Start without timecap, Open Stint, Hide timer, Sign in / out); the window grows while it's open.
 - Signed in with the same email as the web app, it shows the same session: start, pause, extend or finish in either, the other follows. A session started in the web app makes the widget appear if it was hidden (without taking focus from the browser); time's up brings it forward.
-- **Desktop app required notice:** when the desktop timer isn't running for the user (signed out, or signed in with no widget online, detected with realtime presence), a small amber chip "Desktop app required" shows next to the session controls in the navbar and under the start bar. Same design in both places. Clicking it explains what the desktop timer does and how to set it up (install, sign in with the same email), with Sign in when signed out. On Mac: a **Download for Mac** button (GitHub Releases, latest build) and the first-launch "Open Anyway" step; on Windows: "coming soon". Not shown on phones (the timer is desktop-only) or while presence is still loading.
+- **Desktop app required notice:** when the desktop timer isn't running for the user (signed out, or signed in with no widget online, detected with realtime presence), a small amber chip "Desktop app required" shows next to the session controls in the navbar and under the start bar. Same design in both places. Clicking it explains what the desktop timer does and how to set it up (install, sign in with the same email), with Sign in when signed out. The download matches the visitor's system: **Download for Mac** (first launch: "Open Anyway") or **Download for Windows** ("More info → Run anyway"), from the latest GitHub Release.
+- **Auto-update:** the desktop app checks for a new version at launch and every 3 h, downloads it in the background, and installs + restarts only while no session runs. Releases are built by the "Desktop release" GitHub workflow (Mac + Windows). Not shown on phones (the timer is desktop-only) or while presence is still loading.
 - Without the desktop app, sessions still run in the tab: navbar counter, tab title, time's-up overlay, sound and notification.
 
 ## Tech stack
@@ -238,5 +239,4 @@ Any task checked off while a session is `active` gets attributed to that session
 
 ## Open questions
 - How should focus sessions and tasks be linked? (The tentative version above is a stand-in.)
-- Windows build: needs a Windows machine (e.g. a GitHub Actions Windows runner). Until then the notice says "coming soon" on Windows.
-- Apple signing + notarization ($99/year) to remove the "Open Anyway" step on Mac.
+- Code signing to remove the first-launch warnings: Apple ($99/year) and a Windows certificate.

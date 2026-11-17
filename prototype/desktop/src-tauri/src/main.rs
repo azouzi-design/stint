@@ -31,6 +31,9 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
+        // Updates: the widget page decides when (only while no session runs), see prototype/widget/updater.ts.
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             // Mac: no Dock icon, lives in the menu bar (also lets it float over fullscreen apps).
             #[cfg(target_os = "macos")]

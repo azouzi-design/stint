@@ -17,26 +17,30 @@ npm run dev                # opens the widget, loading http://localhost:5174/?wi
 Timer UI changes reload live. Changes to `src-tauri/` rebuild and restart the app.
 The widget can also be previewed in a browser at http://localhost:5174/?widget.
 
-## Build and release (Mac)
+## Release (Mac + Windows, with auto-update)
 
-```sh
-rustup target add x86_64-apple-darwin                 # once: Intel Macs too
-npx tauri build --target universal-apple-darwin       # Apple Silicon + Intel in one app
-```
+1. Bump `version` in `src-tauri/tauri.conf.json` (and `package.json`, `src-tauri/Cargo.toml` to match). Commit + push.
+2. Run the **Desktop release** workflow: GitHub → Actions → Desktop release → Run workflow
+   (or `gh workflow run desktop-release.yml`).
 
-The `.dmg` lands in `src-tauri/target/universal-apple-darwin/release/bundle/dmg/`. Built apps load
-https://stint-prototype.vercel.app/?widget, so most changes ship with the website, no new build needed.
+It builds the universal Mac app (Apple Silicon + Intel) and the Windows installer on GitHub's servers, and
+publishes release `desktop-v<version>` with:
+- `Stint-mac.dmg` / `Stint-windows.exe`: what the web app's Download button links to (`releases/latest/download/…`);
+- the signed update bundles + `latest.json`, which installed apps check (at launch, then every 3 h) and install
+  **only while no session is running** (`prototype/widget/updater.ts`).
 
-Publish it as a GitHub Release with the asset named **`Stint-mac.dmg`**: the web app's Download button
-points to `releases/latest/download/Stint-mac.dmg`, so it always serves the newest release.
+Most changes don't need a release at all: the timer UI is loaded from the website, so a Vercel deploy is enough.
+Release only when `src-tauri/` changes (window, tray, plugins, permissions).
 
-```sh
-cp src-tauri/target/universal-apple-darwin/release/bundle/dmg/Stint_*.dmg Stint-mac.dmg
-gh release create v0.1.1 Stint-mac.dmg --title "Stint desktop 0.1.1" --notes "…"
-```
+**Updater signing key:** `~/.tauri/stint-updater.key` (private, also the repo secret `TAURI_SIGNING_PRIVATE_KEY`).
+Keep a backup in a password manager: without it, installed apps can never receive updates again.
+The public half is in `tauri.conf.json` (`plugins.updater.pubkey`).
 
-Bump `version` in `src-tauri/tauri.conf.json` first. Unsigned for now: on first launch macOS blocks it,
-then System Settings → Privacy & Security → "Open Anyway". Windows: not built yet (needs a Windows machine).
+**Unsigned for now:** Mac shows "Open Anyway" (System Settings → Privacy & Security) on first launch,
+Windows shows "Windows protected your PC" → More info → Run anyway. Updates don't show these again.
+
+**Local build** (to try a build without releasing): `npx tauri build --target universal-apple-darwin`
+(needs `rustup target add x86_64-apple-darwin` once). Output: `src-tauri/target/universal-apple-darwin/release/bundle/`.
 
 ## Notes
 

@@ -8,13 +8,21 @@ interface TauriWindow {
   hide(): Promise<void>
   setFocus(): Promise<void>
 }
+export interface TauriUpdate {
+  version: string
+  download(): Promise<void>
+  install(): Promise<void>
+}
 interface TauriGlobal {
   window: { getCurrentWindow(): TauriWindow }
   dpi: { LogicalSize: new (width: number, height: number) => unknown }
   opener?: { openUrl(url: string): Promise<void> }
+  // Missing in builds older than 0.2.0 (no updater yet).
+  updater?: { check(): Promise<TauriUpdate | null> }
+  process?: { relaunch(): Promise<void> }
 }
 
-const tauri = (window as unknown as { __TAURI__?: TauriGlobal }).__TAURI__
+export const tauri = (window as unknown as { __TAURI__?: TauriGlobal }).__TAURI__
 export const inDesktopApp = !!tauri
 
 const win = () => tauri?.window.getCurrentWindow()
