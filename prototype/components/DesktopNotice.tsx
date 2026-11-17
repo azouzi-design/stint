@@ -3,10 +3,11 @@ import WarningIcon from 'pixelarticons/svg/warning-diamond.svg?react'
 import { cn } from '@/lib/utils'
 import { useAuth, useSignInOpen } from '../lib/auth'
 import { isDesktopApp, usePresence } from '../lib/presence'
+import { isMac } from '../lib/startOverlay'
 import { useIsMobile } from '../lib/useMedia'
 
-/** Where the desktop app can be downloaded. Empty until a build is published. */
-const DOWNLOAD_URL = ''
+/** The latest Mac build (GitHub Releases; `latest/download` always serves the newest release). */
+const MAC_DOWNLOAD_URL = 'https://github.com/azouzi-design/stint/releases/latest/download/Stint-mac.dmg'
 
 /**
  * True once we know the desktop timer isn't running for this user: signed out (it can't be
@@ -52,20 +53,26 @@ export function DesktopNotice({ className }: { className?: string }) {
           <p className="mt-4 text-foreground-secondary">
             It floats above your other apps and alerts you when time’s up. Without it, sessions only run in this tab.
           </p>
-          <ol className="mt-8 list-decimal space-y-2 pl-16 text-foreground-secondary">
-            <li>Install Stint for Mac or Windows.</li>
-            <li>{signedIn ? 'Sign in there with the same email.' : 'Sign in, here and there, with the same email.'}</li>
-          </ol>
+          {isMac ? (
+            <ol className="mt-8 list-decimal space-y-2 pl-16 text-foreground-secondary">
+              <li>Download Stint and drag it into Applications.</li>
+              <li>
+                Open it. The first time, macOS blocks it (it isn’t signed by Apple yet): go to System Settings → Privacy &
+                Security → <span className="font-medium text-foreground">Open Anyway</span>.
+              </li>
+              <li>{signedIn ? 'Sign in there with the same email.' : 'Sign in, here and there, with the same email.'}</li>
+            </ol>
+          ) : (
+            <p className="mt-8 text-foreground-secondary">Stint for Windows is coming soon. For now the desktop timer is Mac only.</p>
+          )}
           <div className="mt-12 flex items-center gap-8">
-            {DOWNLOAD_URL ? (
+            {isMac && (
               <a
-                href={DOWNLOAD_URL}
-                className="flex h-28 items-center rounded-6 bg-foreground px-10 text-[0.786rem] font-medium text-background hover:bg-neutral-80"
+                href={MAC_DOWNLOAD_URL}
+                className="flex h-28 items-center rounded-6 bg-foreground px-10 text-[0.786rem] font-medium whitespace-nowrap text-background hover:bg-neutral-80"
               >
-                Download
+                Download for Mac
               </a>
-            ) : (
-              <span className="text-[0.786rem] whitespace-nowrap text-foreground-tertiary">Download link coming soon</span>
             )}
             {!signedIn && (
               <Popover.Close

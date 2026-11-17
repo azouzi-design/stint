@@ -17,11 +17,26 @@ npm run dev                # opens the widget, loading http://localhost:5174/?wi
 Timer UI changes reload live. Changes to `src-tauri/` rebuild and restart the app.
 The widget can also be previewed in a browser at http://localhost:5174/?widget.
 
-## Build
+## Build and release (Mac)
 
-`npm run build` makes `Stint.app` and a `.dmg` (in `src-tauri/target/release/bundle/`), which load
-https://stint-prototype.vercel.app/?widget. Unsigned for now: on first launch macOS blocks it, then
-System Settings → Privacy & Security → "Open Anyway".
+```sh
+rustup target add x86_64-apple-darwin                 # once: Intel Macs too
+npx tauri build --target universal-apple-darwin       # Apple Silicon + Intel in one app
+```
+
+The `.dmg` lands in `src-tauri/target/universal-apple-darwin/release/bundle/dmg/`. Built apps load
+https://stint-prototype.vercel.app/?widget, so most changes ship with the website, no new build needed.
+
+Publish it as a GitHub Release with the asset named **`Stint-mac.dmg`**: the web app's Download button
+points to `releases/latest/download/Stint-mac.dmg`, so it always serves the newest release.
+
+```sh
+cp src-tauri/target/universal-apple-darwin/release/bundle/dmg/Stint_*.dmg Stint-mac.dmg
+gh release create v0.1.1 Stint-mac.dmg --title "Stint desktop 0.1.1" --notes "…"
+```
+
+Bump `version` in `src-tauri/tauri.conf.json` first. Unsigned for now: on first launch macOS blocks it,
+then System Settings → Privacy & Security → "Open Anyway". Windows: not built yet (needs a Windows machine).
 
 ## Notes
 
