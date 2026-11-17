@@ -3,21 +3,20 @@ import { Dialog } from 'radix-ui'
 import PlayIcon from 'pixelarticons/svg/play.svg?react'
 import Logomark from '@/assets/brand/logomark-stint.svg?react'
 import { cn } from '@/lib/utils'
-import { openPip } from '../lib/pip'
 import { primeAudio, primeNotifications } from '../lib/session'
 import { isMac, useStartOverlay, useTimeUpOverlay } from '../lib/startOverlay'
 import { useStore } from '../store'
+import { DesktopNotice } from './DesktopNotice'
 
 const MAX_MIN = 600 // 10 hours
 
 type Unit = 'min' | 'hr'
 
-/** Start the session and open the pop-out — both from the same click / key press (the pop-out requires one). */
+/** Start from the click / key press: browsers need one to allow the sound and the notification later. */
 function start(minutes: number | null) {
   primeAudio()
+  primeNotifications()
   useStore.getState().startSession(minutes)
-  openPip().catch(() => {}) // unsupported browsers (Safari, Firefox): no pop-out
-  primeNotifications() // after openPip: it needs the click first
 }
 
 /** Minutes for the typed value, or null when it isn't a valid duration. */
@@ -218,6 +217,10 @@ function StartBar({ onStart }: { onStart: () => void }) {
           </>
         )}
       </p>
+
+      <div className="mt-16 flex justify-center">
+        <DesktopNotice />
+      </div>
     </div>
   )
 }

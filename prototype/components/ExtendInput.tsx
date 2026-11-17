@@ -31,7 +31,7 @@ export function ExtendInput({ compact = false }: { compact?: boolean }) {
         autoComplete="off"
         className={cn(compact ? 'w-[2.75rem]' : 'w-[4.5rem]', 'min-w-0 bg-transparent px-4 text-[0.857rem] text-foreground tabular-nums outline-none placeholder:text-muted-foreground')}
       />
-      {/* Compact (pop-out): Enter submits, no button. */}
+      {/* Compact (desktop widget): Enter submits, no button. */}
       <button
         type="submit"
         hidden={compact}

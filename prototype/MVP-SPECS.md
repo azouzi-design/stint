@@ -18,19 +18,24 @@ Parts 1–5 were built on the `prototype` branch and merged into `main`. Later i
   - [x] 10. Routines recurrence
 - [x] **Part 4: Focus sessions**
   - [x] 11. Session flow (start, navbar counter, pause / stop / extend, end alert)
-  - [x] 12. Pop-out timer
+  - [x] 12. ~~Pop-out timer~~ (removed: replaced by the desktop timer)
 - [x] **Part 5: Mobile**
   - [x] 13. Weekly view
 - [x] **Part 6: Iteration**
   - [x] 14. Calendar switcher in the menu: sample data / my calendar
   - [x] 15. Start overlay (`⌘K` / `Ctrl+K`), typed duration with Min / Hr, no timecap
   - [x] 16. Custom extend at time's up, Discard during a session's first minute
-  - [x] 17. Minimal one-row pop-out timer (all states, Back to Stint, Hide timer)
+  - [x] 17. ~~Minimal one-row pop-out timer~~ (removed)
+- [x] **Part 7: Desktop + sync**
+  - [x] 18. Full-screen time's-up overlay, desktop notification
+  - [x] 19. Desktop timer widget (Tauri)
+  - [x] 20. Database + email-code sign-in: "My calendar" syncs between web and desktop
+  - [x] 21. Browser pop-out removed; "Desktop app required" notice
 
 ## Purpose
 An interactive front-end for testing, playing with, and defining what the product should eventually be.
 
-**Out of scope:** backend, database connections, accounts/auth, or any advanced infrastructure.
+**Backend:** the project's Supabase dev database, for sign-in and sync only (see Tech stack). Signed out, everything still works from browser storage.
 
 **Data:** persisted in localStorage, so a refresh keeps it. There are two calendars, picked from the navbar menu: **Sample data**, seeded with realistic content (tasks, events, routines, notes, finished sessions, projects), and **My calendar**, which starts empty. Each keeps its own saved data.
 
@@ -68,7 +73,7 @@ An interactive front-end for testing, playing with, and defining what the produc
 - **Monthly cell:** the month the week belongs to: the one holding its Thursday (today's week always shows today's month).
 - **Swipe:** native horizontal scroll-snap. While swiping, the previous / next week is visible (read-only) beside the current one.
 - **Touch gestures:** tap a row to edit it. Press and hold lifts it: move to drag it, or release without moving to open the row menu (copy / cut / paste / clear / project / repeat).
-- No pop-out timer on phones (the API is desktop-only); the navbar counter, tab title and alert still work.
+- The timer is desktop-only: on phones the navbar counter, tab title and alert still work, and the "Desktop app required" notice isn't shown.
 
 ### Day layout (list view)
 A day is a vertical list of rows, and any row can hold any item type.
@@ -180,7 +185,7 @@ Each holds three small labeled sections, stacked:
 2. The session starts:
    - An `active` session row appears in today's cell, placed by time.
    - The counter runs in the navbar and in the tab title (`24:13 · Stint`).
-   - A **pop-out timer** opens automatically (see below).
+   - The **desktop timer** shows it (see below). Without the desktop app, the session runs in the tab only.
 3. While it runs, the user can pause, resume, or stop early. A session stopped early is saved as `finished` with the time actually worked.
    - The duration shown on a session is focused time: pauses aren't counted.
    - A session stopped under 1 minute is discarded (no row is kept). During that first minute the stop button reads **Discard** (× icon) instead of Stop, so it's clear nothing will be saved.
@@ -192,24 +197,17 @@ Each holds three small labeled sections, stacked:
    - The browser tab is highlighted and its title text changes.
    - The app waits for the user to respond. The user can **extend** the session or **confirm** it's finished (Done).
    - **Time's-up overlay:** the same full-screen overlay as the start, in amber: pulsing dot, `0:00`, "Time's up · 25 min focused", an extend field (focused) and Done. Enter = Done when the field is empty, or extends by what's typed. Clicking outside doesn't close it; `Esc` hides it, leaving Done + extend in the navbar, and `⌘K` / `Ctrl+K` brings it back.
-   - Extend: type any duration and press Enter: `20` / `20m` = minutes, `1h` / `1.5h` = hours (up to 10 h). Also available next to Done in the navbar and the pop-out.
+   - Extend: type any duration and press Enter: `20` / `20m` = minutes, `1h` / `1.5h` = hours (up to 10 h). Also available next to Done in the navbar and in the desktop timer.
    - Time spent waiting after time's up isn't counted: extending continues from the moment the counter hit zero.
 5. Only once the user confirms is the row marked `finished`. Its end time is the moment the counter hit zero, not when the user clicked Done.
 
-### Pop-out timer
-- It opens as soon as a session starts: a tiny one-row window (240 px wide, the narrowest Chrome allows), so the user stays aware of the session while moving between apps and tabs.
-- Priority: as small and simple as possible.
-- Layout: state dot + counter on the left, a single ⋮ button on the right. Clicking it opens a vertical menu of the actions (icon + label); the window grows to fit it and shrinks back when it closes.
-- States:
-  - **Running:** green pulsing dot, counter (counts down; counts up with no timecap). Menu: Pause, Stop (or Discard during the first minute), Back to Stint, Hide timer.
-  - **Paused:** grey dot, dimmed counter. Menu: Resume, Stop / Discard, Back to Stint, Hide timer.
-  - **Time's up:** amber background and dot, "Time's up". Done (✓) and a compact extend field (type `20m` / `1h`, Enter) stay in the row; the menu holds Back to Stint and Hide timer.
-  - **Ended:** shows "Saved · 25m focused" or "Discarded" for ~1.5 s, then the window closes.
-- Always in the menu: **Back to Stint** (↩: brings the tab to the front; the pop-out stays) and **Hide timer** (closes the pop-out without switching to the browser; the session carries on in the navbar).
-- The browser's frame on top of the pop-out (site name + close) can't be removed in a browser. A frameless floating timer needs a desktop app (e.g. a Tauri / Electron wrapper): see open questions.
-- Once hidden or closed, a pop-out button next to the navbar counter reopens it.
-- Implementation: the browser's Document Picture-in-Picture API (Chromium browsers). The click that starts the session is what opens the window.
-- **Safari / Firefox:** no extra design for now. The rest of the session flow still works there; there's just no pop-out (see open questions).
+### Desktop timer (widget)
+- The timer lives in the **desktop app** (Mac / Windows): a tiny frameless window that floats above other apps, sized to its content, with a menu bar / tray icon. There is **no browser pop-out**: it was removed for good (a browser can't hide its own frame, and it looked out of place).
+- Code: the page `prototype/widget` (`/?widget`) inside the Tauri shell `prototype/desktop`.
+- States (one row): **Idle** (duration field + Start), **Running** (green dot, counter, pause), **Paused** (grey dot, dimmed counter, resume), **Time's up** (amber row, Done ✓ + compact extend field), **Ended** ("Saved · 25m" / "Discarded" for ~1.5 s). The ⋮ menu holds the rest (Stop / Discard, Start without timecap, Open Stint, Hide timer, Sign in / out); the window grows while it's open.
+- Signed in with the same email as the web app, it shows the same session: start, pause, extend or finish in either, the other follows. A session started in the web app makes the widget appear if it was hidden (without taking focus from the browser); time's up brings it forward.
+- **Desktop app required notice:** when the desktop timer isn't running for the user (signed out, or signed in with no widget online, detected with realtime presence), a small amber chip "Desktop app required" shows next to the session controls in the navbar and under the start bar. Same design in both places. Clicking it explains what the desktop timer does and how to set it up (install, sign in with the same email), with Sign in when signed out. Not shown on phones (the timer is desktop-only) or while presence is still loading.
+- Without the desktop app, sessions still run in the tab: navbar counter, tab title, time's-up overlay, sound and notification.
 
 ## Tech stack
 
@@ -221,13 +219,13 @@ Each holds three small labeled sections, stacked:
 | State + persistence | Zustand + `persist` middleware → localStorage | |
 | Row text editing | TipTap | Minimal: single line, text + links only. **Only the row being edited mounts an editor**; every other row renders static text. The Link extension handles inline links (non-inclusive, so typing after a link doesn't extend it). The `/` picker and link popover are small custom components anchored with radix Popover; TipTap's Suggestion utility is still an option for `#` (which, unlike `/`, can appear mid-text). |
 | Drag & drop | dnd-kit (core + sortable) | Drag across days, the weekly and monthly cells, and within a day; auto-scrolls inside scrollable cells |
-| Menus / popovers | radix-ui | Context menu (copy / cut / paste / clear), the start overlay (Dialog), the project popover, the navbar menu (with the calendar switcher) |
+| Menus / popovers | radix-ui | Context menu (copy / cut / paste / clear), the start overlay (Dialog), the project popover, the navbar menu (with the calendar switcher), the desktop notice |
+| Desktop timer | Tauri 2 (Rust shell) loading `/?widget` | Frameless always-on-top window, menu bar / tray icon, native notifications. See `prototype/desktop/README.md`. |
 | Dates | date-fns | Month grid (weeks start Monday), mobile week navigation, timeframe math, routine repeats |
-| Backend | None in the prototype | Supabase stays installed for the real product later |
+| Backend | Supabase (dev project): Postgres + row level security + realtime, email-code sign-in | Schema in `/supabase/migrations`, shared with the real product. Signed-in users' "My calendar" syncs between the web app and the desktop widget; last write wins per row. |
 
 **No library needed:**
 - **Timer:** calculated from the start timestamp, so it stays accurate while the tab is in the background.
-- **Pop-out:** the native Document Picture-in-Picture API + a React portal (stylesheets are copied into the new window).
 - **End-of-session alert:** Web Audio / a short sound file, `document.title`, a favicon swap, and the Notifications API (`new Notification`, no service worker or server needed while the tab is open).
 - **Mobile week swipe:** CSS scroll-snap.
 - **Event shortcut (`5:00-5:30 …`):** a regex.
@@ -240,5 +238,4 @@ Any task checked off while a session is `active` gets attributed to that session
 
 ## Open questions
 - How should focus sessions and tasks be linked? (The tentative version above is a stand-in.)
-- What should replace the pop-out timer in browsers without Document Picture-in-Picture (Safari, Firefox)?
-- A truly frameless floating timer (no browser title bar): only possible outside the browser. Options: a desktop wrapper (Tauri / Electron: frameless, always-on-top window), or a small native menu-bar companion app.
+- Where the desktop app is downloaded from (the notice's Download button stays hidden until there's a published build).

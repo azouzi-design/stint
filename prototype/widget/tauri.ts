@@ -24,9 +24,10 @@ export function resizeWidget(width: number, height: number) {
   if (tauri) win()?.setSize(new tauri.dpi.LogicalSize(Math.ceil(width), Math.ceil(height))).catch(() => {})
 }
 
-export function showWidget() {
+/** `focus: false` shows it without taking the keyboard from the app the user is typing in. */
+export function showWidget({ focus = true } = {}) {
   const w = win()
-  w?.show().then(() => w.setFocus()).catch(() => {})
+  w?.show().then(() => (focus ? w.setFocus() : undefined)).catch(() => {})
 }
 
 export function hideWidget() {

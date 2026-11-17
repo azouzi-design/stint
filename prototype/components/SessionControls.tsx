@@ -1,9 +1,7 @@
 import CloseIcon from 'pixelarticons/svg/close.svg?react'
 import PlayIcon from 'pixelarticons/svg/play.svg?react'
-import PipIcon from 'pixelarticons/svg/picture-in-picture.svg?react'
 import PauseIcon from '@/assets/icons/custom-pause.svg?react'
 import { cn } from '@/lib/utils'
-import { openPip, pipSupported, usePip } from '../lib/pip'
 import { formatClock, MIN_SAVED_MS, sessionClock } from '../lib/session'
 import { useIsMobile } from '../lib/useMedia'
 import { useNow } from '../lib/useNow'
@@ -38,7 +36,6 @@ function StartButton() {
 function RunningControls() {
   const session = useStore((s) => s.activeSession)!
   const { pauseSession, resumeSession, finishSession } = useStore.getState()
-  const pipWin = usePip((s) => s.win)
   const now = useNow(250)
   const { displayMs, focusedMs, phase } = sessionClock(session, now)
   const noCap = session.plannedMin === null
@@ -81,17 +78,6 @@ function RunningControls() {
       ) : (
         <button type="button" className={iconBtn} onClick={finishSession} aria-label="Stop session" title="Stop (saves the time focused so far)">
           <span className="size-8 rounded-[1px] bg-current" />
-        </button>
-      )}
-      {pipSupported() && !pipWin && (
-        <button
-          type="button"
-          className={iconBtn}
-          onClick={() => openPip().catch(() => {})}
-          aria-label="Pop out timer"
-          title="Pop out timer (stays on top)"
-        >
-          <PipIcon className="size-16" />
         </button>
       )}
     </div>

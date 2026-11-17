@@ -7,9 +7,11 @@ import MenuIcon from 'pixelarticons/svg/menu.svg?react'
 import Logomark from '@/assets/brand/logomark-stint.svg?react'
 import { cn } from '@/lib/utils'
 import { weekLabel } from '../lib/dates'
+import { signOut, useAuth, useSignInOpen } from '../lib/auth'
 import { useIsMobile } from '../lib/useMedia'
 import { useStore, type Dataset } from '../store'
 import { SessionControls } from './SessionControls'
+import { DesktopNotice } from './DesktopNotice'
 
 const ghost = 'flex h-28 items-center gap-6 rounded-6 px-8 text-[0.857rem] font-medium text-foreground-secondary hover:bg-muted'
 const iconBtn = 'flex size-28 items-center justify-center rounded-6 text-icon hover:bg-muted hover:text-foreground'
@@ -61,6 +63,7 @@ function DesktopNavbar() {
       <div className="flex items-center gap-8">
         <Logomark className="size-24 text-foreground" aria-label="Stint" />
         <SessionControls />
+        <DesktopNotice />
       </div>
 
       {/* Center: month navigation */}
@@ -94,6 +97,7 @@ function Menu() {
   const dataset = useStore((s) => s.dataset)
   const switchDataset = useStore((s) => s.switchDataset)
   const resetToSample = useStore((s) => s.resetToSample)
+  const auth = useAuth()
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger className={iconBtn} aria-label="Menu">
@@ -115,6 +119,9 @@ function Menu() {
                   </DropdownMenu.ItemIndicator>
                 </span>
                 {label}
+                {value === 'mine' && auth.status === 'signedIn' && (
+                  <span className="ml-auto text-[0.714rem] text-foreground-tertiary">Synced</span>
+                )}
               </DropdownMenu.RadioItem>
             ))}
           </DropdownMenu.RadioGroup>
@@ -123,6 +130,25 @@ function Menu() {
               <DropdownMenu.Separator className="-mx-4 my-4 h-px bg-border" />
               <DropdownMenu.Item onSelect={resetToSample} className={menuItem}>
                 Reset sample data
+              </DropdownMenu.Item>
+            </>
+          )}
+          {auth.status === 'signedOut' && (
+            <>
+              <DropdownMenu.Separator className="-mx-4 my-4 h-px bg-border" />
+              <DropdownMenu.Item onSelect={() => useSignInOpen.setState(true)} className={menuItem}>
+                Sign in to sync
+              </DropdownMenu.Item>
+            </>
+          )}
+          {auth.status === 'signedIn' && (
+            <>
+              <DropdownMenu.Separator className="-mx-4 my-4 h-px bg-border" />
+              <DropdownMenu.Label className="truncate px-8 pt-2 pb-2 text-[0.786rem] text-foreground-tertiary">
+                {auth.email}
+              </DropdownMenu.Label>
+              <DropdownMenu.Item onSelect={() => void signOut()} className={menuItem}>
+                Sign out
               </DropdownMenu.Item>
             </>
           )}

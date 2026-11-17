@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware'
 import { addDays, addMonths, addWeeks, format, isSameMonth, parseISO, startOfMonth } from 'date-fns'
 import { dayKey, monthForWeek, monthWeeks, mondayOf, weekInMonth } from './lib/dates'
 import { plainText } from './lib/rich'
-import { containerDate, ruleDates } from './lib/routines'
+import { containerDate, routineCopyId, ruleDates } from './lib/routines'
 import { buildSeed, SEED_PROJECTS, seedRules } from './seed'
 import { MIN_SAVED_MS, sessionClock } from './lib/session'
 import type { ActiveSession, Clipboard, Editing, Item, ItemFields, Project, Repeat, RoutineRule, Section } from './types'
@@ -166,7 +166,7 @@ function generateRoutines(items: Item[], rules: RoutineRule[], from: Date, to: D
       const list = listOf(next, container)
       const at = list.findIndex((i) => i.type !== 'routine')
       const copy: Item = {
-        id: crypto.randomUUID(),
+        id: routineCopyId(rule.id, date), // same id on every device: no duplicates when synced
         container,
         order: 0,
         projectId: rule.projectId,

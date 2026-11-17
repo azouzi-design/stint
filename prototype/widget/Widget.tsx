@@ -6,10 +6,16 @@ import MoreIcon from 'pixelarticons/svg/more-vertical.svg?react'
 import OpenIcon from 'pixelarticons/svg/external-link.svg?react'
 import HideIcon from 'pixelarticons/svg/eye-off.svg?react'
 import InfinityIcon from 'pixelarticons/svg/clock.svg?react'
+import ArrowIcon from 'pixelarticons/svg/arrow-right.svg?react'
+import LoginIcon from 'pixelarticons/svg/login.svg?react'
+import LogoutIcon from 'pixelarticons/svg/logout.svg?react'
 import PauseIcon from '@/assets/icons/custom-pause.svg?react'
+import { create } from 'zustand'
 import { cn } from '@/lib/utils'
 import { ExtendInput } from '../components/ExtendInput'
 import { SessionController } from '../components/SessionController'
+import { useSignIn } from '../lib/useSignIn'
+import { signOut, useAuth } from '../lib/auth'
 import { formatDuration } from '../lib/dates'
 import { formatClock, MIN_SAVED_MS, parseDuration, primeAudio, primeNotifications, sessionClock } from '../lib/session'
 import { useNow } from '../lib/useNow'
@@ -21,6 +27,9 @@ const END_MS = 1600
 
 type Icon = ComponentType<SVGProps<SVGSVGElement>>
 type Action = { icon: Icon; label: string; onClick: () => void }
+
+/** Whether the sign-in row replaces the start row. */
+const useSigningIn = create<boolean>(() => false)
 
 const iconBtn =
   'flex size-24 shrink-0 items-center justify-center rounded-4 text-icon hover:bg-muted hover:text-foreground'
@@ -65,6 +74,7 @@ export function WidgetApp() {
 
 function Widget() {
   const session = useStore((s) => s.activeSession)
+  const signingIn = useSigningIn()
   const items = useStore((s) => s.items)
   // Remember the last session so its outcome can show once it ends.
   const [lastItemId, setLastItemId] = useState<string | null>(null)
@@ -76,13 +86,19 @@ function Widget() {
     return () => clearTimeout(t)
   }, [session, lastItemId])
 
-  // Time's up: bring the widget back if it was hidden.
+  // A session started (here or in the web app): show the widget if it was hidden, without
+  // taking focus from the browser. Time's up: bring it forward.
+  const itemId = session?.itemId
+  useEffect(() => {
+    if (itemId) showWidget({ focus: false })
+  }, [itemId])
   const timeUp = !!session?.timeUpAt
   useEffect(() => {
     if (timeUp) showWidget()
   }, [timeUp])
 
   if (session) return <Timer />
+  if (signingIn) return <SignInRow />
   if (lastItemId) {
     const item = items.find((i) => i.id === lastItemId)
     return <Ended savedMin={item?.type === 'session' ? (item.focusedMin ?? null) : null} />
@@ -172,8 +188,15 @@ function start(minutes: number | null) {
 function StartRow() {
   const [text, setText] = useState('')
   const minutes = parseDuration(text)
+  const auth = useAuth((s) => s.status)
+  const account: Action[] =
+    auth === 'signedOut'
+      ? [{ icon: LoginIcon, label: 'Sign in to sync', onClick: () => useSigningIn.setState(true) }]
+      : auth === 'signedIn'
+        ? [{ icon: LogoutIcon, label: 'Sign out', onClick: () => void signOut() }]
+        : []
   return (
-    <Frame actions={[{ icon: InfinityIcon, label: 'Start without timecap', onClick: () => start(null) }, ...always]}>
+    <Frame actions={[{ icon: InfinityIcon, label: 'Start without timecap', onClick: () => start(null) }, ...always, ...account]}>
       <span data-tauri-drag-region className="size-6 shrink-0 rounded-full bg-neutral-30" />
       <form
         className="ml-6 flex items-center gap-2"
@@ -264,6 +287,64 @@ function Timer() {
         </>
       )}
     </Frame>
+  )
+}
+
+/** Email → 6-digit code, in place of the start row. */
+function SignInRow() {
+  const close = () => useSigningIn.setState(false)
+  const s = useSignIn(close)
+  const isEmail = s.step === 'email'
+  const note = s.error ?? (isEmail ? null : `Code sent to ${s.email.trim()}`)
+  return (
+    <div>
+      <form
+        data-tauri-drag-region
+        className="flex h-32 items-center gap-2 pr-4 pl-8"
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (isEmail ? s.canSend : s.canVerify) void (isEmail ? s.send() : s.verify())
+        }}
+      >
+        <input
+          key={s.step}
+          autoFocus
+          type={isEmail ? 'email' : 'text'}
+          inputMode={isEmail ? 'email' : 'numeric'}
+          autoComplete={isEmail ? 'email' : 'one-time-code'}
+          placeholder={isEmail ? 'Email to sync' : '6-digit code'}
+          value={isEmail ? s.email : s.code}
+          onChange={(e) => (isEmail ? s.setEmail(e.target.value) : s.setCode(e.target.value))}
+          className={cn(
+            'h-24 w-[10rem] rounded-4 bg-muted px-6 text-[0.857rem] outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-neutral-40',
+            !isEmail && 'tracking-[0.2em] tabular-nums',
+          )}
+        />
+        <button
+          type="submit"
+          disabled={isEmail ? !s.canSend : !s.canVerify}
+          aria-label={isEmail ? 'Send code' : 'Sign in'}
+          title={isEmail ? 'Send code' : 'Sign in'}
+          className="flex size-24 shrink-0 items-center justify-center rounded-4 bg-foreground text-background hover:bg-neutral-80 disabled:bg-neutral-30"
+        >
+          {s.busy ? '…' : isEmail ? <ArrowIcon className="size-12" /> : <CheckIcon className="size-12" />}
+        </button>
+        <button
+          type="button"
+          onClick={isEmail ? close : s.back}
+          aria-label={isEmail ? 'Cancel' : 'Use another email'}
+          title={isEmail ? 'Cancel' : 'Use another email'}
+          className={iconBtn}
+        >
+          <CloseIcon className="size-16" />
+        </button>
+      </form>
+      {note && (
+        <p className={cn('max-w-[13rem] px-8 pb-6 text-[0.714rem]', s.error ? 'text-destructive' : 'text-foreground-tertiary')}>
+          {note}
+        </p>
+      )}
+    </div>
   )
 }
 

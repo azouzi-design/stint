@@ -1,4 +1,4 @@
-// Prototype sandbox: front-end only, no Supabase, not part of the production build.
+// Prototype sandbox: not part of the production build. Uses the project's Supabase (dev) for sign-in + sync.
 // Run with `npm run proto`.
 import path from 'node:path'
 import { defineConfig } from 'vite'
@@ -9,6 +9,7 @@ import svgr from 'vite-plugin-svgr'
 export default defineConfig({
   root: path.resolve(__dirname, 'prototype'),
   publicDir: path.resolve(__dirname, 'public'),
+  envDir: __dirname, // the repo root's .env.local (Supabase URL + public key)
   plugins: [react(), tailwindcss(), svgr()],
   resolve: {
     alias: {
