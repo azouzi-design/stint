@@ -3,6 +3,7 @@ import { useDroppable } from '@dnd-kit/core'
 import { SortableContext } from '@dnd-kit/sortable'
 import { format, getISOWeek } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { mondayIn } from '../lib/dates'
 import type { EditMode } from '../lib/parse'
 import { PreviewContext, SECTION_LABEL, SECTIONS, type SectionCells } from '../lib/lists'
 import { useStore } from '../store'
@@ -133,10 +134,10 @@ export function SectionBlock({ section, label, cell, min }: { section: Section; 
   )
 }
 
-export function WeekCell({ monday, cells }: { monday: Date; cells: SectionCells }) {
+export function WeekCell({ start, cells }: { start: Date; cells: SectionCells }) {
   return (
     <div className={cn(CELL_H, 'flex min-w-0 flex-col bg-card')}>
-      <div className={cn(CELL_HEADER, 'text-foreground-tertiary')}>Week {getISOWeek(monday)}</div>
+      <div className={cn(CELL_HEADER, 'text-foreground-tertiary')}>Week {getISOWeek(mondayIn(start))}</div>
       <div className="cell-scroll min-h-0 flex-1 overflow-y-auto border-t border-border">
         {SECTIONS.map((s) => (
           <SectionBlock key={s} section={s} label={SECTION_LABEL[s]} cell={cells[s]} />

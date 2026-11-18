@@ -3,9 +3,9 @@ import { cn } from '@/lib/utils'
 import { useSignInOpen } from '../lib/auth'
 import { useSignIn } from '../lib/useSignIn'
 
-const field =
+export const field =
   'h-32 w-full rounded-8 border border-border bg-background px-12 text-[0.857rem] text-foreground outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-neutral-40'
-const primary =
+export const primary =
   'flex h-32 items-center justify-center rounded-8 bg-foreground px-12 text-[0.857rem] font-medium text-background hover:bg-neutral-80 disabled:bg-neutral-30'
 
 /** Web: "Sign in to sync" dialog (opened from the menu or the desktop notice). */
@@ -27,7 +27,8 @@ export function SignInDialog() {
   )
 }
 
-function SignInForm({ onDone }: { onDone: () => void }) {
+/** `intro`: what signing in is for, in place of the default (shown at the email step). */
+export function SignInForm({ onDone, title = 'Sync your calendar', intro }: { onDone?: () => void; title?: string; intro?: string }) {
   const s = useSignIn(onDone)
   return (
     <form
@@ -38,10 +39,10 @@ function SignInForm({ onDone }: { onDone: () => void }) {
       className="flex flex-col gap-12"
     >
       <div>
-        <Dialog.Title className="text-[1rem] font-medium text-foreground">Sync your calendar</Dialog.Title>
+        <Dialog.Title className="text-[1rem] font-medium text-foreground">{title}</Dialog.Title>
         <p className="mt-4 text-[0.857rem] text-foreground-secondary">
           {s.step === 'email'
-            ? 'Sign in with your email to keep Stint in sync across the web app and the desktop timer.'
+            ? (intro ?? 'Sign in with your email to keep Stint in sync across the web app and the desktop timer.')
             : `Enter the 6-digit code sent to ${s.email.trim()}.`}
         </p>
       </div>

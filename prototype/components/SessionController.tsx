@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { chime, formatClock, notifyTimeUp, sessionClock, setAttentionFavicon, timeUpAt } from '../lib/session'
 import { useNow } from '../lib/useNow'
+import { useSettings } from '../lib/settings'
 import { useStore } from '../store'
 
 const BASE_TITLE = document.title
@@ -10,6 +11,7 @@ export function SessionController() {
   const session = useStore((s) => s.activeSession)
   const now = useNow(1000, !!session)
   const timeUp = !!session?.timeUpAt
+  const tabTimer = useSettings((s) => s.tabTimer)
 
   // One timeout for the exact end time. A single timeout (unlike a repeating timer) isn't
   // heavily throttled in background tabs.
@@ -39,9 +41,11 @@ export function SessionController() {
       return
     }
     const { displayMs, phase } = sessionClock(session, now)
+    // Time's up always flashes the tab (it's the alert); the running timer only if the setting is on.
     if (phase === 'timeUp') document.title = Math.floor(now / 1000) % 2 ? "Time's up · Stint" : "● Time's up"
+    else if (!tabTimer) document.title = BASE_TITLE
     else document.title = `${phase === 'paused' ? 'Paused · ' : ''}${formatClock(displayMs)} · Stint`
-  }, [session, now])
+  }, [session, now, tabTimer])
 
   return null
 }

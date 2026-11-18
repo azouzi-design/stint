@@ -15,7 +15,8 @@ import {
   MeasuringStrategy,
 } from '@dnd-kit/core'
 import { isSameDay, isSameMonth } from 'date-fns'
-import { dayKey, monthKey, monthWeeks, weekKey } from '../lib/dates'
+import { dayKey, monthKey, monthWeeks, weekdayNames, weekKey } from '../lib/dates'
+import { useSettings } from '../lib/settings'
 import { markDragEnd, openRowMenu } from '../lib/touchMenu'
 import { useIsMobile } from '../lib/useMedia'
 import { canHold, useStore } from '../store'
@@ -25,7 +26,6 @@ import { DayCell, MonthRow, WeekCell } from './Cells'
 import { RowView } from './ItemRow'
 import { WeekPager } from './WeekView'
 
-const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 const GRID = 'grid grid-cols-8'
 
 /** Desktop: the month grid. Mobile: one week at a time, swiped. */
@@ -36,7 +36,9 @@ export function Calendar() {
 
 function MonthGrid() {
   const month = useStore((s) => s.viewMonth)
-  const weeks = useMemo(() => monthWeeks(month), [month])
+  const weekStart = useSettings((s) => s.weekStart)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- monthWeeks reads the week start setting
+  const weeks = useMemo(() => monthWeeks(month), [month, weekStart])
   const { get, sections } = useLists()
   const today = new Date()
 
@@ -44,7 +46,7 @@ function MonthGrid() {
     <div className="min-w-[68rem]">
       {/* Column headers */}
       <div className={`${GRID} sticky top-48 z-10 border-b border-neutral-30 bg-background`}>
-        {[...WEEKDAYS, 'Weekly'].map((d) => (
+        {[...weekdayNames(), 'Weekly'].map((d) => (
           <div key={d} className="flex h-32 items-center px-6 text-group-title text-foreground-tertiary">
             {d}
           </div>
@@ -63,7 +65,7 @@ function MonthGrid() {
               items={get(dayKey(d))}
             />
           ))}
-          <WeekCell monday={days[0]} cells={sections((s) => weekKey(days[0], s))} />
+          <WeekCell start={days[0]} cells={sections((s) => weekKey(days[0], s))} />
         </div>
       ))}
 

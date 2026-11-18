@@ -20,6 +20,11 @@ interface TauriGlobal {
   // Missing in builds older than 0.2.0 (no updater yet).
   updater?: { check(): Promise<TauriUpdate | null> }
   process?: { relaunch(): Promise<void> }
+  // 0.2.1+: stint:// links (one-click sign-in from the web app, see lib/desktopLink.ts).
+  deepLink?: {
+    getCurrent(): Promise<string[] | null>
+    onOpenUrl(handler: (urls: string[]) => void): Promise<unknown>
+  }
 }
 
 export const tauri = (window as unknown as { __TAURI__?: TauriGlobal }).__TAURI__
@@ -42,9 +47,9 @@ export function hideWidget() {
   win()?.hide().catch(() => {})
 }
 
-/** Open the full Stint app in the user's browser. */
-export function openStint() {
-  const url = `${location.origin}/`
+/** Open the full Stint app in the user's browser (`query`: e.g. `?connect=…`). */
+export function openStint(query = '') {
+  const url = `${location.origin}/${query}`
   if (tauri?.opener) tauri.opener.openUrl(url).catch(() => {})
   else window.open(url, '_blank')
 }

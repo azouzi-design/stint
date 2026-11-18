@@ -1,8 +1,9 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { addDays, addMonths, addWeeks, format, isSameMonth, parseISO, startOfMonth } from 'date-fns'
-import { dayKey, monthForWeek, monthWeeks, mondayOf, weekInMonth } from './lib/dates'
+import { dayKey, monthForWeek, monthWeeks, weekStartOf, weekInMonth } from './lib/dates'
 import { plainText } from './lib/rich'
+import { useSettings } from './lib/settings'
 import { containerDate, routineCopyId, ruleDates } from './lib/routines'
 import { buildSeed, SEED_PROJECTS, seedRules } from './seed'
 import { MIN_SAVED_MS, sessionClock } from './lib/session'
@@ -16,8 +17,8 @@ interface State {
   /** First day of the month being viewed. Not persisted: always opens on today. */
   viewMonth: Date
   shiftMonth: (delta: number) => void
-  /** Monday of the week being viewed (mobile). Kept in sync with viewMonth, which always overlaps it:
-   *  today's week ↔ today's month; any other week ↔ the month holding its Thursday. */
+  /** First day of the week being viewed (mobile). Kept in sync with viewMonth, which always overlaps it:
+   *  today's week ↔ today's month; any other week ↔ the month holding its middle day. */
   viewWeek: Date
   shiftWeek: (delta: number) => void
   goToToday: () => void
@@ -203,12 +204,12 @@ export const useStore = create<State>()(
       shiftMonth: (delta) => {
         set((s) => {
           const viewMonth = addMonths(s.viewMonth, delta)
-          const viewWeek = isSameMonth(viewMonth, new Date()) ? mondayOf(new Date()) : weekInMonth(viewMonth)
+          const viewWeek = isSameMonth(viewMonth, new Date()) ? weekStartOf(new Date()) : weekInMonth(viewMonth)
           return { viewMonth, viewWeek, editing: null }
         })
         get().ensureRoutines()
       },
-      viewWeek: mondayOf(new Date()),
+      viewWeek: weekStartOf(new Date()),
       shiftWeek: (delta) => {
         set((s) => {
           const viewWeek = addWeeks(s.viewWeek, delta)
@@ -217,7 +218,7 @@ export const useStore = create<State>()(
         get().ensureRoutines()
       },
       goToToday: () => {
-        set({ viewMonth: startOfMonth(new Date()), viewWeek: mondayOf(new Date()), editing: null })
+        set({ viewMonth: startOfMonth(new Date()), viewWeek: weekStartOf(new Date()), editing: null })
         get().ensureRoutines()
       },
       resetToSample: () => {
@@ -548,3 +549,11 @@ export const canPasteInto = (clip: Clipboard | null, container: string) =>
 /** Is this routine copy still repeating (so "Stop repeating" applies)? */
 export const isRepeating = (rules: RoutineRule[], item: Item) =>
   item.type === 'routine' && !!item.ruleId && rules.some((r) => r.id === item.ruleId && (r.end === null || r.end > item.ruleDate!))
+
+// Week start changed (Settings): re-align the viewed week (mobile) and regenerate routines for the new grid.
+useSettings.subscribe((next, prev) => {
+  if (next.weekStart === prev.weekStart) return
+  const s = useStore.getState()
+  useStore.setState({ viewWeek: weekStartOf(addDays(s.viewWeek, 3)) })
+  s.ensureRoutines()
+})

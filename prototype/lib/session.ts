@@ -1,4 +1,5 @@
 import type { ActiveSession } from '../types'
+import { useSettings } from './settings'
 
 export type Phase = 'running' | 'paused' | 'timeUp'
 
@@ -76,13 +77,13 @@ export function chime() {
 const canNotify = () => typeof window !== 'undefined' && 'Notification' in window
 
 export function primeNotifications() {
-  if (!canNotify() || Notification.permission !== 'default') return
+  if (!canNotify() || Notification.permission !== 'default' || !useSettings.getState().notify) return
   Notification.requestPermission().catch(() => {})
 }
 
 /** Returns the notification so it can be closed once the user responds in the app. */
 export function notifyTimeUp(plannedMin: number | null): Notification | null {
-  if (!canNotify() || Notification.permission !== 'granted') return null
+  if (!canNotify() || Notification.permission !== 'granted' || !useSettings.getState().notify) return null
   try {
     const n = new Notification("Time's up", {
       body: plannedMin ? `Your ${plannedMin} min focus session is over.` : 'Your focus session is over.',

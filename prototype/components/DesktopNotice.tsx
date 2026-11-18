@@ -3,17 +3,10 @@ import WarningIcon from 'pixelarticons/svg/warning-diamond.svg?react'
 import { cn } from '@/lib/utils'
 import { useAuth, useSignInOpen } from '../lib/auth'
 import { isDesktopApp, usePresence } from '../lib/presence'
+import { DOWNLOAD } from '../lib/download'
 import { isMac } from '../lib/startOverlay'
 import { useIsMobile } from '../lib/useMedia'
 
-// The latest builds (GitHub Releases: `latest/download` always serves the newest release).
-const RELEASES = 'https://github.com/azouzi-design/stint/releases/latest/download'
-const isWindows = typeof navigator !== 'undefined' && /Win/.test(navigator.platform || navigator.userAgent)
-const DOWNLOAD = isMac
-  ? { url: `${RELEASES}/Stint-mac.dmg`, label: 'Download for Mac' }
-  : isWindows
-    ? { url: `${RELEASES}/Stint-windows.exe`, label: 'Download for Windows' }
-    : null
 
 /**
  * True once we know the desktop timer isn't running for this user: signed out (it can't be
@@ -75,7 +68,10 @@ export function DesktopNotice({ className }: { className?: string }) {
                   <Strong>More info</Strong> → <Strong>Run anyway</Strong> (it isn’t signed yet).
                 </li>
               )}
-              <li>{signedIn ? 'Sign in there with the same email.' : 'Sign in, here and there, with the same email.'}</li>
+              <li>
+                Click <Strong>Sign in</Strong> in the timer: it opens Stint here{signedIn ? '' : ' (sign in once)'}, then
+                one click connects it.
+              </li>
             </ol>
           ) : (
             <p className="mt-8 text-foreground-secondary">The desktop timer is available for Mac and Windows.</p>

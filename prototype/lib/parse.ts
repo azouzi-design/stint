@@ -1,20 +1,38 @@
+import { formatTimeRange } from './dates'
 import { normalizeUrl } from './rich'
+import { useSettings } from './settings'
 import type { EventItem, Item, ItemFields, ItemType, Repeat } from '../types'
 
 /** How a row being edited will be saved. 'auto' = task, unless it starts with a time range. */
 export type EditMode = Exclude<ItemType, 'session'> | 'auto'
 
-// "5:00-5:30 Meet Dave", "5 - 5:30 …", "14:00–15:00 …"
-const TIME_RANGE = /^\s*(\d{1,2})(?::(\d{2}))?\s*[-–]\s*(\d{1,2})(?::(\d{2}))?\s+(.+)$/
+// "5:00-5:30 Meet Dave", "5 - 5:30 …", "14:00–15:00 …", "2-3pm …", "11am-1pm …", "9:30am–10:15 …"
+const TIME_RANGE = /^\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*[-–]\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s+(.+)$/i
+
+/** Hour with an optional am/pm → 0–23 (null if invalid). Without a suffix it's read as 24h. */
+function hour24(h: number, suffix: string | undefined): number | null {
+  if (!suffix) return h <= 23 ? h : null
+  if (h < 1 || h > 12) return null
+  return (h % 12) + (suffix.toLowerCase() === 'pm' ? 12 : 0)
+}
 
 export function parseTimeRange(text: string): { start: string; end: string; rest: string } | null {
   const m = text.match(TIME_RANGE)
   if (!m) return null
-  const [sh, sm, eh, em] = [m[1], m[2] ?? '0', m[3], m[4] ?? '0'].map(Number)
-  if (sh > 23 || eh > 23 || sm > 59 || em > 59) return null
-  if (eh * 60 + em <= sh * 60 + sm) return null
+  const [sh, sm, eh, em] = [m[1], m[2] ?? '0', m[4], m[5] ?? '0'].map(Number)
+  if (sm > 59 || em > 59) return null
+  const end = hour24(eh, m[6])
+  if (end === null) return null
+  let start = hour24(sh, m[3])
+  // "2-3pm": the start takes the end's am/pm ("11-1pm" → 11am, when that's the only way it fits).
+  if (!m[3] && m[6] && sh >= 1 && sh <= 12) {
+    const same = hour24(sh, m[6])!
+    const other = hour24(sh, m[6].toLowerCase() === 'pm' ? 'am' : 'pm')!
+    start = same * 60 + sm < end * 60 + em ? same : other
+  }
+  if (start === null || end * 60 + em <= start * 60 + sm) return null
   const fmt = (h: number, min: number) => `${h}:${String(min).padStart(2, '0')}`
-  return { start: fmt(sh, sm), end: fmt(eh, em), rest: m[5].trim() }
+  return { start: fmt(start, sm), end: fmt(end, em), rest: m[7].trim() }
 }
 
 // A URL at the very end of an event row becomes the event's join link.
@@ -38,7 +56,7 @@ function parseEvent(md: string): Omit<EventItem, 'id' | 'container' | 'order' | 
 export function editText(item: Item): string {
   switch (item.type) {
     case 'event':
-      return `${item.start}-${item.end} ${item.title}${item.link ? ` ${item.link}` : ''}`
+      return `${formatTimeRange(item.start, item.end, useSettings.getState().timeFormat, '-')} ${item.title}${item.link ? ` ${item.link}` : ''}`
     case 'session':
       return ''
     default:

@@ -5,7 +5,8 @@ import CheckIcon from 'pixelarticons/svg/check.svg?react'
 import ExternalLinkIcon from 'pixelarticons/svg/external-link.svg?react'
 import RepeatIcon from 'pixelarticons/svg/repeat.svg?react'
 import { cn } from '@/lib/utils'
-import { clock, formatDuration, isoMinutes, timeframeMinutes } from '../lib/dates'
+import { clock, formatDuration, formatTimeRange, isoMinutes, timeframeMinutes } from '../lib/dates'
+import { useSettings } from '../lib/settings'
 import { DELETED_PROJECT_COLOR, PROJECT_COLORS } from '../lib/projects'
 import { useShallow } from 'zustand/react/shallow'
 import { sessionClock } from '../lib/session'
@@ -213,7 +214,7 @@ function Content({ item }: { item: Item }) {
       return (
         <>
           <Time>
-            {item.start}–{item.end}
+            <TimeRange start={item.start} end={item.end} />
           </Time>
           <Text>
             <RichText value={item.title} />
@@ -239,6 +240,12 @@ function Content({ item }: { item: Item }) {
   }
 }
 
+/** "9:00–10:30" or "9–10:30am", per Settings → Time format. */
+function TimeRange({ start, end }: { start: string; end: string | null }) {
+  const f = useSettings((s) => s.timeFormat)
+  return <>{formatTimeRange(start, end, f)}</>
+}
+
 function SessionContent({ item }: { item: Extract<Item, { type: 'session' }> }) {
   const active = item.status === 'active'
   const session = useStore((s) => (active && s.activeSession?.itemId === item.id ? s.activeSession : null))
@@ -254,7 +261,7 @@ function SessionContent({ item }: { item: Extract<Item, { type: 'session' }> }) 
         aria-label={active ? 'Focus session, active' : 'Focus session'}
       />
       <Time className="text-foreground-secondary">
-        {clock(item.startedAt)}–{active ? '…' : clock(item.endedAt!)}
+        <TimeRange start={clock(item.startedAt)} end={active ? null : clock(item.endedAt!)} />
         <span className="text-foreground-tertiary"> / {formatDuration(focusedMin)}</span>
       </Time>
       <span className="flex-1" />

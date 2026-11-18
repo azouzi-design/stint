@@ -1,6 +1,6 @@
 // Stint desktop widget: a thin native shell around the prototype's timer page (`/?widget`).
 // The shell owns only what a web page can't do: a frameless, always-on-top window, the
-// menu bar / tray icon, and native notifications. The timer itself is the web page.
+// menu bar / tray icon, native notifications, updates and stint:// links. The timer itself is the web page.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use tauri::{
@@ -28,7 +28,13 @@ fn show_widget(app: &AppHandle) {
 }
 
 fn main() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    // Must come first. Windows/Linux: a stint:// link opens a 2nd copy; it hands the link over and quits.
+    #[cfg(any(windows, target_os = "linux"))]
+    let builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| show_widget(app)));
+    builder
+        // stint://auth?… : one-click sign-in from the web app, handled by the page (lib/desktopLink.ts).
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
         // Updates: the widget page decides when (only while no session runs), see prototype/widget/updater.ts.
@@ -38,6 +44,13 @@ fn main() {
             // Mac: no Dock icon, lives in the menu bar (also lets it float over fullscreen apps).
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+
+            // The installer registers stint:// on Windows; this also covers dev runs and Linux.
+            #[cfg(any(windows, target_os = "linux"))]
+            {
+                use tauri_plugin_deep_link::DeepLinkExt;
+                app.deep_link().register_all()?;
+            }
 
             let win = WebviewWindowBuilder::new(app, "widget", WebviewUrl::External(WIDGET_URL.parse()?))
                 .title("Stint")

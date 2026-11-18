@@ -6,8 +6,9 @@ import ChevronRightIcon from 'pixelarticons/svg/chevron-right.svg?react'
 import MenuIcon from 'pixelarticons/svg/menu.svg?react'
 import Logomark from '@/assets/brand/logomark-stint.svg?react'
 import { cn } from '@/lib/utils'
-import { weekLabel } from '../lib/dates'
+import { mondayIn, weekLabel } from '../lib/dates'
 import { signOut, useAuth, useSignInOpen } from '../lib/auth'
+import { useNotificationsNeedAttention, useSettingsOpen } from '../lib/settings'
 import { useIsMobile } from '../lib/useMedia'
 import { useStore, type Dataset } from '../store'
 import { SessionControls } from './SessionControls'
@@ -36,7 +37,7 @@ function MobileNavbar() {
       </div>
       <nav className="flex h-40 items-center gap-4 border-t border-border pr-8 pl-12" aria-label="Week navigation">
         <span className="text-interactive text-foreground tabular-nums">{weekLabel(week)}</span>
-        <span className="text-[0.786rem] text-foreground-tertiary tabular-nums">W{getISOWeek(week)}</span>
+        <span className="text-[0.786rem] text-foreground-tertiary tabular-nums">W{getISOWeek(mondayIn(week))}</span>
         <span className="flex-1" />
         <button type="button" className={ghost} onClick={goToToday}>
           Today
@@ -90,6 +91,7 @@ function DesktopNavbar() {
   )
 }
 
+const dot = 'size-6 rounded-full bg-[oklch(0.75_0.15_70)]'
 const menuItem =
   'flex h-28 cursor-default items-center gap-8 rounded-4 px-8 text-[0.857rem] text-foreground-secondary outline-none data-[highlighted]:bg-muted'
 
@@ -98,10 +100,13 @@ function Menu() {
   const switchDataset = useStore((s) => s.switchDataset)
   const resetToSample = useStore((s) => s.resetToSample)
   const auth = useAuth()
+  // Time's-up notifications are wanted but the browser hasn't allowed them: keep a reminder on the menu.
+  const remind = useNotificationsNeedAttention()
   return (
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger className={iconBtn} aria-label="Menu">
+      <DropdownMenu.Trigger className={cn(iconBtn, 'relative')} aria-label={remind ? 'Menu (notifications are off)' : 'Menu'}>
         <MenuIcon className="size-16" />
+        {remind && <span className={cn(dot, 'absolute top-4 right-4 ring-2 ring-background')} />}
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content
@@ -133,6 +138,17 @@ function Menu() {
               </DropdownMenu.Item>
             </>
           )}
+          <DropdownMenu.Separator className="-mx-4 my-4 h-px bg-border" />
+          <DropdownMenu.Item onSelect={() => useSettingsOpen.setState(true)} className={menuItem}>
+            <span className="size-16 shrink-0" />
+            Settings
+            {remind && (
+              <span className="ml-auto flex items-center gap-4 text-[0.714rem] text-[oklch(0.5_0.1_65)]">
+                <span className={dot} />
+                Notifications off
+              </span>
+            )}
+          </DropdownMenu.Item>
           {auth.status === 'signedOut' && (
             <>
               <DropdownMenu.Separator className="-mx-4 my-4 h-px bg-border" />

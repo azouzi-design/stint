@@ -2,6 +2,7 @@
 // Signed out: data stays in this browser only. Signed in: "My calendar" syncs (see sync.ts).
 import { create } from 'zustand'
 import { supabase } from './supabase'
+import { startSettingsSync } from './settings'
 import { clearLocalCalendar, startSync } from './sync'
 
 type Status = 'loading' | 'signedOut' | 'signedIn' | 'unavailable'
@@ -29,7 +30,13 @@ export function initAuth() {
     if (syncedUser && !user) clearLocalCalendar() // signed out
     syncedUser = user?.id ?? null
     // Outside the auth callback: Supabase calls made inside it can deadlock.
-    if (user) setTimeout(() => void startSync(user.id).then((stop) => (syncedUser === user.id ? (stopSync = stop) : stop())))
+    if (user)
+      setTimeout(() => {
+        const both = Promise.all([startSync(user.id), startSettingsSync(user.id)]).then(
+          ([a, b]) => () => (a(), b()),
+        )
+        void both.then((stop) => (syncedUser === user.id ? (stopSync = stop) : stop()))
+      })
   })
 }
 
@@ -48,6 +55,16 @@ export async function verifyCode(email: string, token: string): Promise<string |
 
 export async function signOut() {
   await supabase?.auth.signOut()
+}
+
+/** Deletes the signed-in account and all its synced data, then signs out here. Returns an error message, or null. */
+export async function deleteAccount(): Promise<string | null> {
+  if (!supabase) return 'Sync is not available'
+  const { error } = await supabase.functions.invoke('delete-account', { method: 'POST' })
+  if (error) return 'Couldn’t delete your account. Try again.'
+  // The account is gone: drop the local session too (the server one no longer exists).
+  await supabase.auth.signOut({ scope: 'local' })
+  return null
 }
 
 function friendly(message: string) {

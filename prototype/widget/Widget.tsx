@@ -16,6 +16,7 @@ import { ExtendInput } from '../components/ExtendInput'
 import { SessionController } from '../components/SessionController'
 import { useSignIn } from '../lib/useSignIn'
 import { signOut, useAuth } from '../lib/auth'
+import { canLinkFromWeb, cancelDesktopSignIn, listenForDesktopLinks, startDesktopSignIn, useDesktopLink } from '../lib/desktopLink'
 import { formatDuration } from '../lib/dates'
 import { formatClock, MIN_SAVED_MS, parseDuration, primeAudio, primeNotifications, sessionClock } from '../lib/session'
 import { useNow } from '../lib/useNow'
@@ -42,6 +43,7 @@ const iconBtn =
 export function WidgetApp() {
   const ref = useRef<HTMLDivElement>(null)
   useAutoUpdate()
+  useEffect(listenForDesktopLinks, [])
 
   // Frameless, transparent window: the page draws its own rounded card.
   useLayoutEffect(() => {
@@ -76,6 +78,7 @@ export function WidgetApp() {
 
 function Widget() {
   const session = useStore((s) => s.activeSession)
+  const auth = useAuth((s) => s.status)
   const signingIn = useSigningIn()
   const items = useStore((s) => s.items)
   // Remember the last session so its outcome can show once it ends.
@@ -99,8 +102,14 @@ function Widget() {
     if (timeUp) showWidget()
   }, [timeUp])
 
+  useEffect(() => {
+    if (auth === 'signedIn') useSigningIn.setState(false)
+  }, [auth])
+
+  // The timer only works signed in: every session belongs to the account (and syncs with the web app).
+  if (auth === 'loading') return <Frame actions={always}><Dot /></Frame>
+  if (auth === 'signedOut') return signingIn ? <SignInRow /> : <ConnectRow />
   if (session) return <Timer />
-  if (signingIn) return <SignInRow />
   if (lastItemId) {
     const item = items.find((i) => i.id === lastItemId)
     return <Ended savedMin={item?.type === 'session' ? (item.focusedMin ?? null) : null} />
@@ -176,7 +185,7 @@ function Menu({ actions, onClose }: { actions: Action[]; onClose: () => void }) 
 }
 
 const always: Action[] = [
-  { icon: OpenIcon, label: 'Open Stint', onClick: openStint },
+  { icon: OpenIcon, label: 'Open Stint', onClick: () => openStint() },
   ...(inDesktopApp ? [{ icon: HideIcon, label: 'Hide timer', onClick: hideWidget }] : []),
 ]
 
@@ -190,16 +199,11 @@ function start(minutes: number | null) {
 function StartRow() {
   const [text, setText] = useState('')
   const minutes = parseDuration(text)
-  const auth = useAuth((s) => s.status)
-  const account: Action[] =
-    auth === 'signedOut'
-      ? [{ icon: LoginIcon, label: 'Sign in to sync', onClick: () => useSigningIn.setState(true) }]
-      : auth === 'signedIn'
-        ? [{ icon: LogoutIcon, label: 'Sign out', onClick: () => void signOut() }]
-        : []
+  const signedIn = useAuth((s) => s.status === 'signedIn')
+  const account: Action[] = signedIn ? [{ icon: LogoutIcon, label: 'Sign out', onClick: () => void signOut() }] : []
   return (
     <Frame actions={[{ icon: InfinityIcon, label: 'Start without timecap', onClick: () => start(null) }, ...always, ...account]}>
-      <span data-tauri-drag-region className="size-6 shrink-0 rounded-full bg-neutral-30" />
+      <Dot />
       <form
         className="ml-6 flex items-center gap-2"
         onSubmit={(e) => {
@@ -292,7 +296,49 @@ function Timer() {
   )
 }
 
-/** Email → 6-digit code, in place of the start row. */
+const Dot = () => <span data-tauri-drag-region className="size-6 shrink-0 rounded-full bg-neutral-30" />
+
+/**
+ * Signed out: one button. It continues in the browser, where the web app (already signed in, or
+ * signed in there once) connects this app in one click (lib/desktopLink.ts).
+ */
+function ConnectRow() {
+  const { step, error } = useDesktopLink()
+  // Builds without stint:// links (0.2.0, until they update): sign in by code here.
+  const begin = canLinkFromWeb ? startDesktopSignIn : () => useSigningIn.setState(true)
+  const waiting = step === 'waiting'
+  return (
+    <div>
+      <Frame actions={waiting ? [{ icon: LoginIcon, label: 'Open the browser again', onClick: begin }, ...always] : always}>
+        <Dot />
+        {step === 'idle' ? (
+          <button
+            type="button"
+            onClick={begin}
+            className="mr-2 ml-6 flex h-24 items-center gap-4 rounded-4 bg-foreground px-8 text-[0.857rem] font-medium whitespace-nowrap text-background hover:bg-neutral-80"
+          >
+            <LoginIcon className="size-12" />
+            Sign in
+          </button>
+        ) : (
+          <>
+            <span data-tauri-drag-region className="mr-2 ml-6 text-[0.857rem] whitespace-nowrap text-foreground-secondary">
+              {waiting ? 'Continue in your browser' : 'Signing in…'}
+            </span>
+            {waiting && (
+              <button type="button" onClick={cancelDesktopSignIn} aria-label="Cancel" title="Cancel" className={iconBtn}>
+                <CloseIcon className="size-16" />
+              </button>
+            )}
+          </>
+        )}
+      </Frame>
+      {error && <p className="max-w-[13rem] px-12 pb-6 text-[0.714rem] text-destructive">{error}</p>}
+    </div>
+  )
+}
+
+/** Email → 6-digit code, in place of the start row (fallback for builds without stint:// links). */
 function SignInRow() {
   const close = () => useSigningIn.setState(false)
   const s = useSignIn(close)

@@ -1,7 +1,8 @@
 import { useLayoutEffect, useRef } from 'react'
 import { addDays, addWeeks, format, getISOWeek, isSameDay } from 'date-fns'
 import { cn } from '@/lib/utils'
-import { dayKey, monthForWeek, monthKey, weekKey } from '../lib/dates'
+import { dayKey, mondayIn, monthForWeek, monthKey, weekKey } from '../lib/dates'
+import { useSettings } from '../lib/settings'
 import { useStore } from '../store'
 import { PreviewContext, SECTION_LABEL, SECTIONS, useLists, type SectionCells } from '../lib/lists'
 import { RowList, SectionBlock } from './Cells'
@@ -54,17 +55,17 @@ export function WeekPager() {
       className="no-scrollbar flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain"
     >
       {[-1, 0, 1].map((offset) => {
-        const monday = addWeeks(week, offset)
+        const start = addWeeks(week, offset)
         const page = 'w-full shrink-0 snap-center snap-always'
         return offset === 0 ? (
           <div key={offset} className={page}>
-            <WeekView monday={monday} />
+            <WeekView start={start} />
           </div>
         ) : (
           <div key={offset} className={cn(page, 'relative')} aria-hidden inert>
             <div className="absolute inset-0 overflow-hidden">
               <PreviewContext.Provider value>
-                <WeekView monday={monday} />
+                <WeekView start={start} />
               </PreviewContext.Provider>
             </div>
           </div>
@@ -74,11 +75,12 @@ export function WeekPager() {
   )
 }
 
-function WeekView({ monday }: { monday: Date }) {
+function WeekView({ start }: { start: Date }) {
+  useSettings((s) => s.weekStart) // re-render when the week start changes
   const { get, sections } = useLists()
   const today = new Date()
-  const month = monthForWeek(monday)
-  const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i))
+  const month = monthForWeek(start)
+  const days = Array.from({ length: 7 }, (_, i) => addDays(start, i))
 
   return (
     <div className="pb-32">
@@ -99,7 +101,7 @@ function WeekView({ monday }: { monday: Date }) {
           </section>
         )
       })}
-      <Sections title={`Week ${getISOWeek(monday)}`} cells={sections((s) => weekKey(monday, s))} />
+      <Sections title={`Week ${getISOWeek(mondayIn(start))}`} cells={sections((s) => weekKey(start, s))} />
       <Sections title={format(month, 'MMMM')} cells={sections((s) => monthKey(month, s))} />
     </div>
   )

@@ -1,6 +1,6 @@
 [package]
 name = "stint-desktop"
-version = "0.2.0"
+version = "0.2.1"
 description = "Stint desktop timer widget (prototype)"
 edition = "2021"
 
@@ -13,4 +13,9 @@ tauri-plugin-notification = "2"
 tauri-plugin-opener = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
+tauri-plugin-deep-link = "2"
 serde_json = "1"
+
+# Windows/Linux: a stint:// link starts a 2nd copy of the app; this hands the link to the running one.
+[target.'cfg(any(windows, target_os = "linux"))'.dependencies]
+tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
