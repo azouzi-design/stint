@@ -165,7 +165,8 @@ site_url = "https://stint-prototype.vercel.app"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["http://localhost:5174", "https://stint-prototype.vercel.app"]
+# `**`: also with a query (e.g. back to /?connect=… after Continue with Google).
+additional_redirect_urls = ["http://localhost:5174/**", "https://stint-prototype.vercel.app/**"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.
@@ -339,6 +340,15 @@ max_frequency = "5s"
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
 # `twitter`, `x`, `slack_oidc`, `spotify`, `workos`, `zoom`.
+# Continue with Google (web). Client: Google Cloud project "Stint" → Google Auth Platform → Clients
+# → "Stint web". The secret is only in the Supabase dashboard (config push leaves it alone unless
+# SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET is exported).
+[auth.external.google]
+enabled = true
+client_id = "872469903848-cb7jjnobvcijg7oq9ud4s4gqk73t8kn4.apps.googleusercontent.com"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+skip_nonce_check = false
+
 [auth.external.apple]
 enabled = false
 client_id = ""

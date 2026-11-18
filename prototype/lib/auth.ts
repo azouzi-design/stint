@@ -1,4 +1,4 @@
-// Sign-in by email code (no passwords, no redirects: works the same in the desktop widget).
+// Sign-in: Continue with Google (web), or an email code (no passwords).
 // Signed out: data stays in this browser only. Signed in: "My calendar" syncs (see sync.ts).
 import { create } from 'zustand'
 import { supabase } from './supabase'
@@ -50,6 +50,16 @@ export async function sendCode(email: string): Promise<string | null> {
 export async function verifyCode(email: string, token: string): Promise<string | null> {
   if (!supabase) return 'Sync is not available'
   const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
+  return error ? friendly(error.message) : null
+}
+
+/**
+ * Leaves for Google's sign-in page, then comes back to this same page (keeping e.g. ?connect=…)
+ * signed in. Same email as an existing account = the same account. Web only.
+ */
+export async function signInWithGoogle(): Promise<string | null> {
+  if (!supabase) return 'Sync is not available'
+  const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.href } })
   return error ? friendly(error.message) : null
 }
 

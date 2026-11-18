@@ -255,3 +255,4 @@ Any task checked off while a session is `active` gets attributed to that session
 ## Open questions
 - How should focus sessions and tasks be linked? (The tentative version above is a stand-in.)
 - Code signing to remove the first-launch warnings: Apple ($99/year) and a Windows certificate.
+- Email sender for sign-in codes (Resend or similar, ~15 min). Supabase's built-in sender allows ~2 emails/hour for the whole project: must be in place before sign-in becomes required. Needs a verified domain: an existing one now, or the Stint domain once bought (moving later = re-verify + change the sender address).

@@ -33,7 +33,7 @@ export function ConnectDesktopDialog() {
           ) : status === 'signedOut' ? (
             <SignInForm
               title="Sign in to Stint"
-              intro="Sign in here once: the desktop timer then signs in with the same account, no second code."
+              intro="Sign in here once: the desktop timer then connects to the same account."
             />
           ) : (
             <Dialog.Title className="text-[1rem] font-medium text-foreground">Connecting…</Dialog.Title>
