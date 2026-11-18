@@ -5,6 +5,8 @@
 interface TauriWindow {
   setSize(size: unknown): Promise<void>
   show(): Promise<void>
+  unminimize(): Promise<void>
+  setAlwaysOnTop(on: boolean): Promise<void>
   hide(): Promise<void>
   setFocus(): Promise<void>
 }
@@ -40,7 +42,13 @@ export function resizeWidget(width: number, height: number) {
 /** `focus: false` shows it without taking the keyboard from the app the user is typing in. */
 export function showWidget({ focus = true } = {}) {
   const w = win()
+  w?.unminimize().catch(() => {}) // allowed from 0.2.3 on
   w?.show().then(() => (focus ? w.setFocus() : undefined)).catch(() => {})
+}
+
+/** Allowed from 0.2.3 on (older builds stay always on top). */
+export function setAlwaysOnTop(on: boolean) {
+  win()?.setAlwaysOnTop(on).catch(() => {})
 }
 
 export function hideWidget() {

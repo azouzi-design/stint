@@ -5,12 +5,14 @@ import PlayIcon from 'pixelarticons/svg/play.svg?react'
 import MoreIcon from 'pixelarticons/svg/more-vertical.svg?react'
 import OpenIcon from 'pixelarticons/svg/external-link.svg?react'
 import HideIcon from 'pixelarticons/svg/eye-off.svg?react'
+import PinIcon from 'pixelarticons/svg/arrow-bar-up.svg?react'
 import InfinityIcon from 'pixelarticons/svg/clock.svg?react'
 import ArrowIcon from 'pixelarticons/svg/arrow-right.svg?react'
 import LoginIcon from 'pixelarticons/svg/login.svg?react'
 import LogoutIcon from 'pixelarticons/svg/logout.svg?react'
 import PauseIcon from '@/assets/icons/custom-pause.svg?react'
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import { cn } from '@/lib/utils'
 import { ExtendInput } from '../components/ExtendInput'
 import { SessionController } from '../components/SessionController'
@@ -21,7 +23,7 @@ import { formatDuration } from '../lib/dates'
 import { formatClock, MIN_SAVED_MS, parseDuration, primeAudio, primeNotifications, sessionClock } from '../lib/session'
 import { useNow } from '../lib/useNow'
 import { useStore } from '../store'
-import { hideWidget, inDesktopApp, openStint, resizeWidget, showWidget } from './tauri'
+import { hideWidget, inDesktopApp, openStint, resizeWidget, setAlwaysOnTop, showWidget } from './tauri'
 import { useAutoUpdate } from './updater'
 
 /** How long "Saved" / "Discarded" shows before going back to the start row. */
@@ -29,6 +31,9 @@ const END_MS = 1600
 
 type Icon = ComponentType<SVGProps<SVGSVGElement>>
 type Action = { icon: Icon; label: string; onClick: () => void }
+
+/** "Always on top" (⋮ menu). Per computer, not synced: it's about this screen. On by default. */
+const useOnTop = create<boolean>()(persist(() => true, { name: 'stint-widget-on-top' }))
 
 /** Whether the sign-in row replaces the start row. */
 const useSigningIn = create<boolean>(() => false)
@@ -44,6 +49,11 @@ export function WidgetApp() {
   const ref = useRef<HTMLDivElement>(null)
   useAutoUpdate()
   useEffect(listenForDesktopLinks, [])
+
+  // Floats above other windows when the user wants it, and always at time's up.
+  const onTop = useOnTop()
+  const timeUp = useStore((s) => !!s.activeSession?.timeUpAt)
+  useEffect(() => setAlwaysOnTop(onTop || timeUp), [onTop, timeUp])
 
   // Frameless, transparent window: the page draws its own rounded card.
   useLayoutEffect(() => {
@@ -180,7 +190,34 @@ function Menu({ actions, onClose }: { actions: Action[]; onClose: () => void }) 
           {label}
         </button>
       ))}
+      <OnTopToggle />
     </div>
+  )
+}
+
+/** A switch, not an action: the menu stays open so the new state shows. */
+function OnTopToggle() {
+  const on = useOnTop()
+  return (
+    <button
+      type="button"
+      role="menuitemcheckbox"
+      aria-checked={on}
+      title="Off: other windows can cover the timer. It still comes on top when time's up."
+      onClick={() => useOnTop.setState(!on, true)}
+      className="flex h-28 w-full items-center gap-8 rounded-4 px-8 text-left text-[0.857rem] whitespace-nowrap text-foreground hover:bg-muted"
+    >
+      <PinIcon className="size-16 shrink-0 text-icon" />
+      Always on top
+      <span
+        className={cn(
+          'ml-auto flex h-16 w-28 shrink-0 items-center rounded-full p-2 transition-colors',
+          on ? 'justify-end bg-foreground' : 'justify-start bg-neutral-30',
+        )}
+      >
+        <span className="size-12 rounded-full bg-background" />
+      </span>
+    </button>
   )
 }
 
@@ -248,7 +285,7 @@ function Timer() {
       ? []
       : [
           discard
-            ? { icon: CloseIcon, label: 'Discard (under 1 min)', onClick: finishSession }
+            ? { icon: CloseIcon, label: 'Discard', onClick: finishSession }
             : { icon: StopIcon, label: 'Stop and save', onClick: finishSession },
         ]),
     ...always,

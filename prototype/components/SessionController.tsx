@@ -31,7 +31,8 @@ export function SessionController() {
     // Done / extend in the app: the notification is no longer relevant.
     return () => {
       setAttentionFavicon(false)
-      notification?.close()
+      // `?.()`: in the desktop app, Tauri's stand-in Notification has no close().
+      notification?.close?.()
     }
   }, [timeUp])
 

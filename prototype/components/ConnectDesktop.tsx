@@ -1,27 +1,23 @@
-import { useEffect, useState } from "react";
-import { Dialog } from "radix-ui";
-import CheckIcon from "pixelarticons/svg/check.svg?react";
-import {
-  clearConnectParam,
-  connectState,
-  desktopLinkUrl,
-} from "../lib/desktopLink";
-import { isDesktopApp, usePresence } from "../lib/presence";
-import { useAuth } from "../lib/auth";
-import { DOWNLOAD } from "../lib/download";
-import { primary } from "./SignIn";
+import { useEffect, useState } from 'react'
+import { Dialog } from 'radix-ui'
+import CheckIcon from 'pixelarticons/svg/check.svg?react'
+import { clearConnectParam, connectState, desktopLinkUrl } from '../lib/desktopLink'
+import { isDesktopApp, usePresence } from '../lib/presence'
+import { useAuth } from '../lib/auth'
+import { DOWNLOAD } from '../lib/download'
+import { primary } from './SignIn'
 
 /**
  * Web, opened by the desktop app's "Sign in" (/?connect=…): signs the desktop app in as the
  * account signed in here, in one click. (Signed out, the sign-in screen comes first: App.tsx.)
  */
 export function ConnectDesktopDialog() {
-  const [open, setOpen] = useState(!!connectState && !isDesktopApp);
-  if (!connectState || isDesktopApp) return null;
+  const [open, setOpen] = useState(!!connectState && !isDesktopApp)
+  if (!connectState || isDesktopApp) return null
   const close = () => {
-    setOpen(false);
-    clearConnectParam();
-  };
+    setOpen(false)
+    clearConnectParam()
+  }
   return (
     <Dialog.Root open={open} onOpenChange={(o) => !o && close()}>
       <Dialog.Portal>
@@ -35,34 +31,34 @@ export function ConnectDesktopDialog() {
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
-  );
+  )
 }
 
 function Connect({ state, onDone }: { state: string; onDone: () => void }) {
-  const email = useAuth((s) => s.email);
-  const desktopOnline = usePresence((s) => s.desktopOnline);
+  const email = useAuth((s) => s.email)
+  const desktopOnline = usePresence((s) => s.desktopOnline)
   // A single-use link, fetched ahead so the click opens it right away. Fetched again only
   // after an error (a new link voids the previous one).
-  const [link, setLink] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [clicks, setClicks] = useState(0);
-  const [attempt, setAttempt] = useState(0);
+  const [link, setLink] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [clicks, setClicks] = useState(0)
+  const [attempt, setAttempt] = useState(0)
   useEffect(() => {
-    let live = true;
+    let live = true
     desktopLinkUrl(state).then(
       (url) => live && setLink(url),
       (e: Error) => live && setError(e.message),
-    );
+    )
     return () => {
-      live = false;
-    };
-  }, [state, attempt]);
+      live = false
+    }
+  }, [state, attempt])
 
   // The desktop app shows up online once it has signed in: done.
-  const connected = clicks > 0 && desktopOnline;
+  const connected = clicks > 0 && desktopOnline
   useEffect(() => {
-    if (connected) clearConnectParam();
-  }, [connected]);
+    if (connected) clearConnectParam()
+  }, [connected])
 
   if (connected) {
     return (
@@ -76,59 +72,42 @@ function Connect({ state, onDone }: { state: string; onDone: () => void }) {
             Signed in as {email}. Sessions you start here run on your desktop.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onDone}
-          className={`${primary} self-end`}
-        >
+        <button type="button" onClick={onDone} className={`${primary} self-end`}>
           Done
         </button>
       </div>
-    );
+    )
   }
 
   return (
     <div className="flex flex-col gap-12">
       <div>
-        <Dialog.Title className="text-[1rem] font-medium text-foreground">
-          Connect the desktop timer
-        </Dialog.Title>
+        <Dialog.Title className="text-[1rem] font-medium text-foreground">Connect the desktop timer</Dialog.Title>
         <p className="mt-4 text-[0.857rem] text-foreground-secondary">
           {clicks === 0
             ? `It will sign in as ${email}, like this tab.`
-            : "If your browser asks, allow it to open Stint. The timer signs in on its own."}
+            : 'If your browser asks, allow it to open Stint. The timer signs in on its own.'}
         </p>
       </div>
       {error && <p className="text-[0.786rem] text-destructive">{error}</p>}
       {clicks > 0 && DOWNLOAD && (
         <p className="text-[0.786rem] text-foreground-tertiary">
-          Nothing opened?{" "}
-          <a
-            href={DOWNLOAD.url}
-            className="font-medium text-foreground-secondary underline hover:text-foreground"
-          >
+          Nothing opened?{' '}
+          <a href={DOWNLOAD.url} className="font-medium text-foreground-secondary underline hover:text-foreground">
             {DOWNLOAD.label}
           </a>
           , open it, then click Sign in in the timer.
         </p>
       )}
       <div className="flex items-center justify-between gap-8">
-        <button
-          type="button"
-          onClick={onDone}
-          className="text-[0.786rem] text-foreground-tertiary hover:text-foreground"
-        >
+        <button type="button" onClick={onDone} className="text-[0.786rem] text-foreground-tertiary hover:text-foreground">
           Not now
         </button>
         {error ? (
-          <button
-            type="button"
-            onClick={() => {
-              setError(null);
-              setAttempt((a) => a + 1);
-            }}
-            className={primary}
-          >
+          <button type="button" onClick={() => {
+              setError(null)
+              setAttempt((a) => a + 1)
+            }} className={primary}>
             Try again
           </button>
         ) : (
@@ -136,17 +115,17 @@ function Connect({ state, onDone }: { state: string; onDone: () => void }) {
             href={link ?? undefined}
             aria-disabled={!link}
             onClick={(e) => {
-              if (!link) return e.preventDefault();
+              if (!link) return e.preventDefault()
               // "Open again" reuses this same link. Don't fetch a new one here: the account
               // has one pending link at a time, so a new one would void the one just sent.
-              setTimeout(() => setClicks((c) => c + 1));
+              setTimeout(() => setClicks((c) => c + 1))
             }}
-            className={`${primary} ${link ? "" : "pointer-events-none bg-neutral-30"}`}
+            className={`${primary} ${link ? '' : 'pointer-events-none bg-neutral-30'}`}
           >
-            {clicks === 0 ? "Open Stint desktop" : "Open again"}
+            {clicks === 0 ? 'Open Stint desktop' : 'Open again'}
           </a>
         )}
       </div>
     </div>
-  );
+  )
 }

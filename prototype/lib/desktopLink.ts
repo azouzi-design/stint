@@ -76,7 +76,10 @@ async function handleLink(raw: string) {
   } catch {
     return
   }
-  if (url.protocol !== 'stint:' || url.host !== 'auth') return
+  if (url.protocol !== 'stint:') return
+  // stint://open (web "Open Stint"): launching the app already shows it; if it was running, bring it up.
+  if (url.host === 'open') return showWidget()
+  if (url.host !== 'auth') return
   const state = url.searchParams.get('state')
   const tokenHash = url.searchParams.get('token_hash')
   if (!supabase || !tokenHash || !state || state !== pendingState()) {
