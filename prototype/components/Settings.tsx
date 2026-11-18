@@ -4,7 +4,7 @@ import CheckIcon from 'pixelarticons/svg/check.svg?react'
 import CloseIcon from 'pixelarticons/svg/close.svg?react'
 import WarningIcon from 'pixelarticons/svg/warning-diamond.svg?react'
 import { cn } from '@/lib/utils'
-import { deleteAccount, useAuth, useSignInOpen } from '../lib/auth'
+import { deleteAccount, useAuth } from '../lib/auth'
 import { DOWNLOAD } from '../lib/download'
 import { isDesktopApp, usePresence } from '../lib/presence'
 import { isMac } from '../lib/startOverlay'
@@ -315,30 +315,6 @@ function DesktopRow() {
         label="Stint for desktop"
         hint="Running and signed in with this account. Sessions show in the floating timer."
         control={<Chip tone="green">Connected</Chip>}
-      />
-    )
-  }
-  if (status !== 'signedIn') {
-    return (
-      <Row
-        label={
-          <span className="flex items-center gap-8">
-            Stint for desktop <Chip tone="amber">Requires sign in</Chip>
-          </span>
-        }
-        hint="The timer syncs through your account. Sign in here, then click Sign in in the timer."
-        control={
-          <button
-            type="button"
-            onClick={() => {
-              useSettingsOpen.setState(false)
-              useSignInOpen.setState(true)
-            }}
-            className={secondary}
-          >
-            Sign in
-          </button>
-        }
       />
     )
   }

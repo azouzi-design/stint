@@ -33,11 +33,15 @@ Parts 1–5 were built on the `prototype` branch and merged into `main`. Later i
   - [x] 21. Browser pop-out removed; "Desktop app required" notice
 - [x] **Part 8: Settings**
   - [x] 22. Settings dialog: tab timer, 12h / 24h, week start, notifications, desktop timer status, delete account (synced to the account)
+- [x] **Part 9: Accounts**
+  - [x] 23. Sign-in required (web + desktop), Continue with Google, one-click desktop sign-in through the web app
 
 ## Purpose
 An interactive front-end for testing, playing with, and defining what the product should eventually be.
 
-**Backend:** the project's Supabase dev database, for sign-in and sync only (see Tech stack). Signed out, everything still works from browser storage.
+**Backend:** the project's Supabase dev database, for sign-in and sync only (see Tech stack).
+
+**Accounts: sign-in is required.** Signed out, the web app is only a sign-in screen: Stint logomark, "Sign in to Stint", a one-line pitch, **Continue with Google**, then "or with email" (email → 6-digit code, no password). Same email = same account, whichever way. Opened from the desktop app's Sign in, it says the timer will connect to the same account. Sign out → back to that screen, and this device's copy of "My calendar" is cleared. Someone who used Stint before sign-in was required keeps their calendar: signing in to an empty account uploads it. (No database configured, i.e. local dev without env: the app runs offline, signed out.)
 
 **Data:** persisted in localStorage, so a refresh keeps it. There are two calendars, picked from the navbar menu: **Sample data**, seeded with realistic content (tasks, events, routines, notes, finished sessions, projects), and **My calendar**, which starts empty. Each keeps its own saved data.
 
@@ -57,7 +61,7 @@ An interactive front-end for testing, playing with, and defining what the produc
 ### Navbar
 - **Left:** Stint logomark + a small, seamless "Start a Stint" button showing its shortcut (`⌘K` / `Ctrl K`). Once a session starts, a compact running counter (14px, 7-segment font) and its controls show in its place.
 - **Month navigation:** previous / next month + a "Today" control in the navbar.
-- **Far right:** menu icon. Holds anything that doesn't fit the calendar view (profile, advanced settings, etc.). It holds a **calendar switcher** — *Sample data* (seeded, with "Reset sample data") or *My calendar* (starts empty; whatever you add is saved). Each calendar keeps its own saved items, projects and routines; switching finishes a running session first. Below it, **Settings** (see Settings) and sign in / out.
+- **Far right:** menu icon. Holds anything that doesn't fit the calendar view (profile, advanced settings, etc.). It holds a **calendar switcher** — *Sample data* (seeded, with "Reset sample data") or *My calendar* (starts empty; whatever you add is saved). Each calendar keeps its own saved items, projects and routines; switching finishes a running session first. Below it, **Settings** (see Settings), the account's email and Sign out.
 
 ### Calendar (desktop: month)
 - **Columns:** Monday → Sunday, plus an 8th column per week for **Weekly goals, notes, backlog**.
@@ -209,7 +213,7 @@ Each holds three small labeled sections, stacked:
 - States (one row): **Idle** (duration field + Start), **Running** (green dot, counter, pause), **Paused** (grey dot, dimmed counter, resume), **Time's up** (amber row, Done ✓ + compact extend field), **Ended** ("Saved · 25m" / "Discarded" for ~1.5 s). The ⋮ menu holds the rest (Stop / Discard, Start without timecap, Open Stint, Hide timer, Sign out); the window grows while it's open.
 - **Sign-in required:** signed out, the widget shows only **Sign in** (no timer), so every session belongs to the account and syncs. Sign in continues in the browser: the web app (already signed in, or signed in there once by email code) shows "Connect the desktop timer" → **Open Stint desktop**, which opens a `stint://` link that signs the app in as the same account. No second code. The link carries a single-use token and only works for the sign-in the app started. Desktop builds older than 0.2.1 fall back to an email code in the widget.
 - Signed in with the same email as the web app, it shows the same session: start, pause, extend or finish in either, the other follows. A session started in the web app makes the widget appear if it was hidden (without taking focus from the browser); time's up brings it forward.
-- **Desktop app required notice:** when the desktop timer isn't running for the user (signed out, or signed in with no widget online, detected with realtime presence), a small amber chip "Desktop app required" shows next to the session controls in the navbar and under the start bar. Same design in both places. Clicking it explains what the desktop timer does and how to set it up (install, then Sign in in the timer, which connects through the web app), with Sign in when signed out. The download matches the visitor's system: **Download for Mac** (first launch: "Open Anyway") or **Download for Windows** ("More info → Run anyway"), from the latest GitHub Release.
+- **Desktop app required notice:** when the desktop timer isn't running for the account (no widget online, detected with realtime presence), a small amber chip "Desktop app required" shows next to the session controls in the navbar and under the start bar. Same design in both places. Clicking it explains what the desktop timer does and how to set it up (install, then Sign in in the timer, which connects through the web app). The download matches the visitor's system: **Download for Mac** (first launch: "Open Anyway") or **Download for Windows** ("More info → Run anyway"), from the latest GitHub Release.
 - **Auto-update:** the desktop app checks for a new version at launch and every 3 h, downloads it in the background, and installs + restarts only while no session runs. Releases are built by the "Desktop release" GitHub workflow (Mac + Windows). Not shown on phones (the timer is desktop-only) or while presence is still loading.
 - Without the desktop app, sessions still run in the tab: navbar counter, tab title, time's-up overlay, sound and notification.
 
@@ -222,8 +226,8 @@ Opened from the navbar menu → **Settings**: one small dialog (web only; the de
 | **Time format** | 12h / **24h** (default) | Event and session times: `14:30` or `2:30pm`. 12h ranges are compact: `9–10:30am`, `11am–1pm`. Editing an event shows its time the same way. Typing accepts both in either mode: `14:00-15:00`, `2-3pm` (the start takes the end's am/pm when it fits: `11-1pm` = 11am–1pm), `11am-1pm`. A time without am/pm is read as 24h (`5-5:30` = 5am). |
 | **Week starts on** | **Monday** (default) / Sunday | The month grid, the mobile week and its swipe. The weekly cell's goals / notes / backlog stay attached to the same week whichever day it starts on (they're keyed by the Monday inside the week). Week numbers stay ISO. |
 | **Notify me when time's up** | on (default) / off | The time's-up desktop notification. Turning it on asks the browser if it hasn't been asked yet. If the browser blocked it (the user refused before), the setting shows how to allow it in the site settings. **Reminder:** while it's on but the browser doesn't allow it, an amber dot shows on the navbar menu and "Notifications off" next to Settings, until it's allowed or turned off. |
-| **Desktop timer** | status | **Connected** (green): the widget is online for this account. **Requires sign in** (amber, signed out on web) + Sign in. **Not installed** (amber, signed in, no widget online) + Install for Mac / Windows; "Already installed? Open it and click Sign in." Phones / other systems: "available for Mac and Windows". |
-| **Danger zone: Delete account** | signed in only | Deletes the account and everything synced to it (calendar, projects, routines, settings). Confirm by typing `DELETE`. Then signed out on this device (its copy of "My calendar" is cleared). Function: `supabase/functions/delete-account`. |
+| **Desktop timer** | status | **Connected** (green): the widget is online for this account. **Not installed** (amber, no widget online) + Install for Mac / Windows; "Already installed? Open it and click Sign in." Phones / other systems: "available for Mac and Windows". |
+| **Danger zone: Delete account** | signed in only | Deletes the account and everything synced to it (calendar, projects, routines, settings). Confirm by typing `DELETE`. Then back to the sign-in screen on this device (its copy of "My calendar" is cleared). Function: `supabase/functions/delete-account`. |
 
 ## Tech stack
 
@@ -255,4 +259,4 @@ Any task checked off while a session is `active` gets attributed to that session
 ## Open questions
 - How should focus sessions and tasks be linked? (The tentative version above is a stand-in.)
 - Code signing to remove the first-launch warnings: Apple ($99/year) and a Windows certificate.
-- Email sender for sign-in codes (Resend or similar, ~15 min). Supabase's built-in sender allows ~2 emails/hour for the whole project: must be in place before sign-in becomes required. Needs a verified domain: an existing one now, or the Stint domain once bought (moving later = re-verify + change the sender address).
+- Email sender for sign-in codes (Resend or similar, ~15 min). Supabase's built-in sender allows ~2 emails/hour for the whole project: sign-in is now required, so email-code users are capped by it (Google sign-ins aren't). Fine for a few testers. Needs a verified domain: an existing one now, or the Stint domain once bought (moving later = re-verify + change the sender address).

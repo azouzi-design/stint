@@ -1,19 +1,18 @@
 import { useEffect, useState } from 'react'
 import { Dialog } from 'radix-ui'
 import CheckIcon from 'pixelarticons/svg/check.svg?react'
-import { useAuth } from '../lib/auth'
 import { clearConnectParam, connectState, desktopLinkUrl } from '../lib/desktopLink'
 import { isDesktopApp, usePresence } from '../lib/presence'
+import { useAuth } from '../lib/auth'
 import { DOWNLOAD } from '../lib/download'
-import { primary, SignInForm } from './SignIn'
+import { primary } from './SignIn'
 
 /**
  * Web, opened by the desktop app's "Sign in" (/?connect=…): signs the desktop app in as the
- * account signed in here, in one click. Signed out here: sign in first (that's the only code).
+ * account signed in here, in one click. (Signed out, the sign-in screen comes first: App.tsx.)
  */
 export function ConnectDesktopDialog() {
   const [open, setOpen] = useState(!!connectState && !isDesktopApp)
-  const status = useAuth((s) => s.status)
   if (!connectState || isDesktopApp) return null
   const close = () => {
     setOpen(false)
@@ -28,16 +27,7 @@ export function ConnectDesktopDialog() {
           onInteractOutside={(e) => e.preventDefault()}
           className="start-bar fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-[22rem] -translate-x-1/2 -translate-y-1/2 rounded-12 border border-border bg-background p-20 shadow-[0_24px_64px_-16px_rgb(0_0_0/0.18),0_2px_6px_rgb(0_0_0/0.05)] outline-none"
         >
-          {status === 'signedIn' ? (
-            <Connect state={connectState} onDone={close} />
-          ) : status === 'signedOut' ? (
-            <SignInForm
-              title="Sign in to Stint"
-              intro="Sign in here once: the desktop timer then connects to the same account."
-            />
-          ) : (
-            <Dialog.Title className="text-[1rem] font-medium text-foreground">Connecting…</Dialog.Title>
-          )}
+          <Connect state={connectState} onDone={close} />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

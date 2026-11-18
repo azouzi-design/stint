@@ -7,7 +7,7 @@ import MenuIcon from 'pixelarticons/svg/menu.svg?react'
 import Logomark from '@/assets/brand/logomark-stint.svg?react'
 import { cn } from '@/lib/utils'
 import { mondayIn, weekLabel } from '../lib/dates'
-import { signOut, useAuth, useSignInOpen } from '../lib/auth'
+import { signOut, useAuth } from '../lib/auth'
 import { useNotificationsNeedAttention, useSettingsOpen } from '../lib/settings'
 import { useIsMobile } from '../lib/useMedia'
 import { useStore, type Dataset } from '../store'
@@ -149,14 +149,6 @@ function Menu() {
               </span>
             )}
           </DropdownMenu.Item>
-          {auth.status === 'signedOut' && (
-            <>
-              <DropdownMenu.Separator className="-mx-4 my-4 h-px bg-border" />
-              <DropdownMenu.Item onSelect={() => useSignInOpen.setState(true)} className={menuItem}>
-                Sign in to sync
-              </DropdownMenu.Item>
-            </>
-          )}
           {auth.status === 'signedIn' && (
             <>
               <DropdownMenu.Separator className="-mx-4 my-4 h-px bg-border" />

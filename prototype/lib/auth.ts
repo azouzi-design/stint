@@ -1,14 +1,12 @@
 // Sign-in: Continue with Google (web), or an email code (no passwords).
-// Signed out: data stays in this browser only. Signed in: "My calendar" syncs (see sync.ts).
+// Stint requires an account: signed out, the web app shows only the sign-in screen and the
+// widget only Sign in. Signed in: "My calendar" syncs (see sync.ts).
 import { create } from 'zustand'
 import { supabase } from './supabase'
 import { startSettingsSync } from './settings'
 import { clearLocalCalendar, startSync } from './sync'
 
 type Status = 'loading' | 'signedOut' | 'signedIn' | 'unavailable'
-
-/** Whether the "Sign in to sync" dialog is open (web). */
-export const useSignInOpen = create<boolean>(() => false)
 
 export const useAuth = create<{ status: Status; email: string | null }>(() => ({
   status: supabase ? 'loading' : 'unavailable',

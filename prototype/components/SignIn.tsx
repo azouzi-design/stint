@@ -1,7 +1,8 @@
 import { useState, type SVGProps } from 'react'
-import { Dialog } from 'radix-ui'
+import Logomark from '@/assets/brand/logomark-stint.svg?react'
 import { cn } from '@/lib/utils'
-import { signInWithGoogle, useSignInOpen } from '../lib/auth'
+import { signInWithGoogle } from '../lib/auth'
+import { connectState } from '../lib/desktopLink'
 import { useSignIn } from '../lib/useSignIn'
 
 export const field =
@@ -9,28 +10,31 @@ export const field =
 export const primary =
   'flex h-32 items-center justify-center rounded-8 bg-foreground px-12 text-[0.857rem] font-medium text-background hover:bg-neutral-80 disabled:bg-neutral-30'
 
-/** Web: "Sign in to sync" dialog (opened from the menu or the desktop notice). */
-export function SignInDialog() {
-  const open = useSignInOpen()
-  const onOpenChange = (o: boolean) => useSignInOpen.setState(o)
+/**
+ * Signed out, the web app is only this: Stint requires an account (the calendar syncs, the
+ * desktop timer signs in through it). Opened from the desktop app (?connect=…), it says so.
+ */
+export function SignInScreen() {
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-[rgb(var(--primitive-neutral-10)/0.82)] backdrop-blur-[6px] start-overlay" />
-        <Dialog.Content
-          aria-describedby={undefined}
-          className="start-bar fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-[22rem] -translate-x-1/2 -translate-y-1/2 rounded-12 border border-border bg-background p-20 shadow-[0_24px_64px_-16px_rgb(0_0_0/0.18),0_2px_6px_rgb(0_0_0/0.05)] outline-none"
-        >
-          {open && <SignInForm onDone={() => onOpenChange(false)} />}
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-16 py-32 font-geist text-foreground">
+      <Logomark className="mb-24 size-32 text-foreground" aria-label="Stint" />
+      <div className="w-full max-w-[22rem] rounded-12 border border-border bg-background p-20 shadow-[0_24px_64px_-16px_rgb(0_0_0/0.12),0_2px_6px_rgb(0_0_0/0.04)]">
+        <SignInForm
+          title="Sign in to Stint"
+          intro={
+            connectState
+              ? 'Sign in once here: the desktop timer then connects to the same account.'
+              : 'Plan your month, then focus in timed sessions. Your calendar syncs between the web app and the desktop timer.'
+          }
+        />
+      </div>
+    </div>
   )
 }
 
-/** `intro`: what signing in is for, in place of the default (shown at the email step). */
-export function SignInForm({ onDone, title = 'Sync your calendar', intro }: { onDone?: () => void; title?: string; intro?: string }) {
-  const s = useSignIn(onDone)
+/** Continue with Google, or email → 6-digit code. `intro` shows at the email step. */
+function SignInForm({ title, intro }: { title: string; intro: string }) {
+  const s = useSignIn()
   const [google, setGoogle] = useState<'idle' | 'leaving'>('idle')
   const [googleError, setGoogleError] = useState<string | null>(null)
   const continueWithGoogle = async () => {
@@ -51,10 +55,10 @@ export function SignInForm({ onDone, title = 'Sync your calendar', intro }: { on
       className="flex flex-col gap-12"
     >
       <div>
-        <Dialog.Title className="text-[1rem] font-medium text-foreground">{title}</Dialog.Title>
+        <h1 className="text-[1rem] font-medium text-foreground">{title}</h1>
         <p className="mt-4 text-[0.857rem] text-foreground-secondary">
           {s.step === 'email'
-            ? (intro ?? 'Sign in with your email to keep Stint in sync across the web app and the desktop timer.')
+            ? intro
             : `Enter the 6-digit code sent to ${s.email.trim()}.`}
         </p>
       </div>

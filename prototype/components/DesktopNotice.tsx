@@ -1,7 +1,7 @@
 import { Popover } from 'radix-ui'
 import WarningIcon from 'pixelarticons/svg/warning-diamond.svg?react'
 import { cn } from '@/lib/utils'
-import { useAuth, useSignInOpen } from '../lib/auth'
+import { useAuth } from '../lib/auth'
 import { isDesktopApp, usePresence } from '../lib/presence'
 import { DOWNLOAD } from '../lib/download'
 import { isMac } from '../lib/startOverlay'
@@ -9,15 +9,15 @@ import { useIsMobile } from '../lib/useMedia'
 
 
 /**
- * True once we know the desktop timer isn't running for this user: signed out (it can't be
- * linked), or signed in with no widget online. Unknown while loading → false (no flash).
+ * True once we know the desktop timer isn't running for this account (no widget online).
+ * Unknown while loading → false (no flash). No database (offline dev): always.
  */
 function useDesktopMissing() {
   const status = useAuth((s) => s.status)
   const { desktopOnline, known } = usePresence()
-  if (isDesktopApp || status === 'loading') return false
-  if (status === 'signedIn') return known && !desktopOnline
-  return true
+  if (isDesktopApp) return false
+  if (status === 'unavailable') return true
+  return status === 'signedIn' && known && !desktopOnline
 }
 
 /**
@@ -26,7 +26,6 @@ function useDesktopMissing() {
  */
 export function DesktopNotice({ className }: { className?: string }) {
   const missing = useDesktopMissing()
-  const signedIn = useAuth((s) => s.status === 'signedIn')
   const mobile = useIsMobile()
   if (!missing || mobile) return null // the timer is desktop-only
 
@@ -69,8 +68,8 @@ export function DesktopNotice({ className }: { className?: string }) {
                 </li>
               )}
               <li>
-                Click <Strong>Sign in</Strong> in the timer: it opens Stint here{signedIn ? '' : ' (sign in once)'}, then
-                one click connects it.
+                Click <Strong>Sign in</Strong> in the timer: it opens Stint here, then one click
+                connects it.
               </li>
             </ol>
           ) : (
@@ -85,14 +84,6 @@ export function DesktopNotice({ className }: { className?: string }) {
               >
                 {DOWNLOAD.label}
               </a>
-            )}
-            {!signedIn && (
-              <Popover.Close
-                onClick={() => useSignInOpen.setState(true)}
-                className="ml-auto flex h-28 items-center rounded-6 px-10 text-[0.786rem] font-medium whitespace-nowrap text-foreground-secondary hover:bg-muted"
-              >
-                Sign in
-              </Popover.Close>
             )}
           </div>
         </Popover.Content>
