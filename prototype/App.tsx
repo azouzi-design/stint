@@ -7,6 +7,7 @@ import { StartOverlay } from './components/StartOverlay'
 import { SignInScreen } from './components/SignIn'
 import { TimeUpOverlay } from './components/TimeUpOverlay'
 import { useAuth } from './lib/auth'
+import { isPhoneOrTablet } from './lib/device'
 
 export default function App() {
   const auth = useAuth((s) => s.status)
@@ -16,8 +17,9 @@ export default function App() {
   return (
     <div className="min-h-screen bg-background font-geist text-foreground">
       <SessionController />
-      <StartOverlay />
-      <TimeUpOverlay />
+      {/* Phones and tablets: no starting, no time's-up controls (sessions are computer-only). */}
+      {!isPhoneOrTablet && <StartOverlay />}
+      {!isPhoneOrTablet && <TimeUpOverlay />}
       <ConnectDesktopDialog />
       <SettingsDialog />
       <Navbar />

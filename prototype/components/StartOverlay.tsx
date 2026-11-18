@@ -3,6 +3,7 @@ import { Dialog } from 'radix-ui'
 import PlayIcon from 'pixelarticons/svg/play.svg?react'
 import Logomark from '@/assets/brand/logomark-stint.svg?react'
 import { cn } from '@/lib/utils'
+import { openDesktopIfClosed } from '../lib/presence'
 import { primeAudio, primeNotifications } from '../lib/session'
 import { isMac, useStartOverlay, useTimeUpOverlay } from '../lib/startOverlay'
 import { useStore } from '../store'
@@ -17,6 +18,7 @@ function start(minutes: number | null) {
   primeAudio()
   primeNotifications()
   useStore.getState().startSession(minutes)
+  openDesktopIfClosed()
 }
 
 /** Minutes for the typed value, or null when it isn't a valid duration. */

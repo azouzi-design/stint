@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Dialog } from 'radix-ui'
 import CheckIcon from 'pixelarticons/svg/check.svg?react'
 import { clearConnectParam, connectState, desktopLinkUrl } from '../lib/desktopLink'
-import { isDesktopApp, usePresence } from '../lib/presence'
+import { isDesktopApp, markDesktopInstalled, usePresence } from '../lib/presence'
 import { useAuth } from '../lib/auth'
 import { DOWNLOAD } from '../lib/download'
 import { primary } from './SignIn'
@@ -116,6 +116,7 @@ function Connect({ state, onDone }: { state: string; onDone: () => void }) {
             aria-disabled={!link}
             onClick={(e) => {
               if (!link) return e.preventDefault()
+              markDesktopInstalled()
               // "Open again" reuses this same link. Don't fetch a new one here: the account
               // has one pending link at a time, so a new one would void the one just sent.
               setTimeout(() => setClicks((c) => c + 1))

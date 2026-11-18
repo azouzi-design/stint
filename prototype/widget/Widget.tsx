@@ -33,7 +33,8 @@ type Icon = ComponentType<SVGProps<SVGSVGElement>>
 type Action = { icon: Icon; label: string; onClick: () => void }
 
 /** "Always on top" (⋮ menu). Per computer, not synced: it's about this screen. On by default. */
-const useOnTop = create<boolean>()(persist(() => true, { name: 'stint-widget-on-top' }))
+// An object, not a bare boolean: persist can't restore a primitive (0.2.3 saved `{}`, read back as on).
+const useOnTop = create<{ on: boolean }>()(persist((): { on: boolean } => ({ on: true }), { name: 'stint-widget' }))
 
 /** Whether the sign-in row replaces the start row. */
 const useSigningIn = create<boolean>(() => false)
@@ -51,7 +52,7 @@ export function WidgetApp() {
   useEffect(listenForDesktopLinks, [])
 
   // Floats above other windows when the user wants it, and always at time's up.
-  const onTop = useOnTop()
+  const onTop = useOnTop((s) => s.on)
   const timeUp = useStore((s) => !!s.activeSession?.timeUpAt)
   useEffect(() => setAlwaysOnTop(onTop || timeUp), [onTop, timeUp])
 
@@ -197,14 +198,14 @@ function Menu({ actions, onClose }: { actions: Action[]; onClose: () => void }) 
 
 /** A switch, not an action: the menu stays open so the new state shows. */
 function OnTopToggle() {
-  const on = useOnTop()
+  const on = useOnTop((s) => s.on)
   return (
     <button
       type="button"
       role="menuitemcheckbox"
       aria-checked={on}
       title="Off: other windows can cover the timer. It still comes on top when time's up."
-      onClick={() => useOnTop.setState(!on, true)}
+      onClick={() => useOnTop.setState({ on: !on })}
       className="flex h-28 w-full items-center gap-8 rounded-4 px-8 text-left text-[0.857rem] whitespace-nowrap text-foreground hover:bg-muted"
     >
       <PinIcon className="size-16 shrink-0 text-icon" />

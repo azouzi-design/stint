@@ -4,6 +4,7 @@ import PauseIcon from '@/assets/icons/custom-pause.svg?react'
 import { cn } from '@/lib/utils'
 import { formatClock, MIN_SAVED_MS, sessionClock } from '../lib/session'
 import { useIsMobile } from '../lib/useMedia'
+import { isPhoneOrTablet } from '../lib/device'
 import { useNow } from '../lib/useNow'
 import { useStore } from '../store'
 import { ExtendInput } from './ExtendInput'
@@ -16,7 +17,42 @@ const iconBtn = 'flex size-28 items-center justify-center rounded-6 text-icon ho
 /** Navbar: "Start a Stint" when idle; the counter + controls during a session. */
 export function SessionControls() {
   const session = useStore((s) => s.activeSession)
+  if (isPhoneOrTablet) return session ? <Counter /> : <ComputerOnly />
   return session ? <RunningControls /> : <StartButton />
+}
+
+/** Phones and tablets: sessions are computer-only. */
+function ComputerOnly() {
+  return <span className="truncate px-4 text-[0.786rem] text-foreground-tertiary">Focus sessions start on your computer</span>
+}
+
+/** Phones and tablets: the session running on the computer, to glance at (no controls). */
+function Counter() {
+  const session = useStore((s) => s.activeSession)!
+  const now = useNow(1000)
+  const { displayMs, phase } = sessionClock(session, now)
+  return (
+    <div className="flex items-center gap-6 px-4" role="status">
+      <span
+        className={cn(
+          'size-6 rounded-full',
+          phase === 'timeUp' ? 'animate-pulse bg-warning' : phase === 'paused' ? 'bg-neutral-40' : 'animate-pulse bg-success',
+        )}
+      />
+      {phase === 'timeUp' ? (
+        <span className="text-[0.857rem] font-medium text-foreground">Time’s up</span>
+      ) : (
+        <span
+          className={cn(
+            'font-dseg7 text-[1rem] leading-none tabular-nums',
+            phase === 'paused' ? 'text-foreground-tertiary' : 'text-foreground',
+          )}
+        >
+          {formatClock(displayMs)}
+        </span>
+      )}
+    </div>
+  )
 }
 
 function StartButton() {

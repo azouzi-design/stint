@@ -2,7 +2,8 @@ import { Popover } from 'radix-ui'
 import WarningIcon from 'pixelarticons/svg/warning-diamond.svg?react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '../lib/auth'
-import { isDesktopApp, usePresence } from '../lib/presence'
+import { isDesktopApp, markDesktopInstalled, usePresence } from '../lib/presence'
+import { isPhoneOrTablet } from '../lib/device'
 import { DOWNLOAD } from '../lib/download'
 import { isMac } from '../lib/startOverlay'
 import { useIsMobile } from '../lib/useMedia'
@@ -27,7 +28,7 @@ function useDesktopMissing() {
 export function DesktopNotice({ className }: { className?: string }) {
   const missing = useDesktopMissing()
   const mobile = useIsMobile()
-  if (!missing || mobile) return null // the timer is desktop-only
+  if (!missing || mobile || isPhoneOrTablet) return null // the timer is desktop-only
 
   return (
     <Popover.Root>
@@ -58,6 +59,7 @@ export function DesktopNotice({ className }: { className?: string }) {
                 {/* Launches the app (or shows it, if it's hidden). Not installed: nothing happens. */}
                 <a
                   href="stint://open"
+                  onClick={markDesktopInstalled}
                   className="flex h-28 items-center rounded-6 bg-foreground px-10 text-[0.786rem] font-medium whitespace-nowrap text-background hover:bg-neutral-80"
                 >
                   Open Stint

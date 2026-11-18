@@ -5,6 +5,7 @@ import CloseIcon from 'pixelarticons/svg/close.svg?react'
 import WarningIcon from 'pixelarticons/svg/warning-diamond.svg?react'
 import { cn } from '@/lib/utils'
 import { deleteAccount, useAuth } from '../lib/auth'
+import { isPhoneOrTablet } from '../lib/device'
 import { DOWNLOAD } from '../lib/download'
 import { isDesktopApp, usePresence } from '../lib/presence'
 import { isMac } from '../lib/startOverlay'
@@ -306,7 +307,7 @@ function DesktopRow() {
   const { desktopOnline, known } = usePresence()
   const mobile = useIsMobile()
 
-  if (mobile || !DOWNLOAD) {
+  if (mobile || isPhoneOrTablet || !DOWNLOAD) {
     return <Row label="Stint for desktop" hint="The floating timer is available for Mac and Windows." />
   }
   if (status === 'signedIn' && desktopOnline) {
