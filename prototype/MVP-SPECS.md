@@ -31,6 +31,8 @@ Parts 1–5 were built on the `prototype` branch and merged into `main`. Later i
   - [x] 19. Desktop timer widget (Tauri)
   - [x] 20. Database + email-code sign-in: "My calendar" syncs between web and desktop
   - [x] 21. Browser pop-out removed; "Desktop app required" notice
+- [x] **Part 8: Settings**
+  - [x] 22. Settings dialog: tab timer, 12h / 24h, week start, notifications, desktop timer status, delete account (synced to the account)
 
 ## Purpose
 An interactive front-end for testing, playing with, and defining what the product should eventually be.
@@ -55,7 +57,7 @@ An interactive front-end for testing, playing with, and defining what the produc
 ### Navbar
 - **Left:** Stint logomark + a small, seamless "Start a Stint" button showing its shortcut (`⌘K` / `Ctrl K`). Once a session starts, a compact running counter (14px, 7-segment font) and its controls show in its place.
 - **Month navigation:** previous / next month + a "Today" control in the navbar.
-- **Far right:** menu icon. Holds anything that doesn't fit the calendar view (profile, advanced settings, etc.). For now it holds a **calendar switcher** — *Sample data* (seeded, with "Reset sample data") or *My calendar* (starts empty; whatever you add is saved). Each calendar keeps its own saved items, projects and routines; switching finishes a running session first.
+- **Far right:** menu icon. Holds anything that doesn't fit the calendar view (profile, advanced settings, etc.). It holds a **calendar switcher** — *Sample data* (seeded, with "Reset sample data") or *My calendar* (starts empty; whatever you add is saved). Each calendar keeps its own saved items, projects and routines; switching finishes a running session first. Below it, **Settings** (see Settings) and sign in / out.
 
 ### Calendar (desktop: month)
 - **Columns:** Monday → Sunday, plus an 8th column per week for **Weekly goals, notes, backlog**.
@@ -211,6 +213,18 @@ Each holds three small labeled sections, stacked:
 - **Auto-update:** the desktop app checks for a new version at launch and every 3 h, downloads it in the background, and installs + restarts only while no session runs. Releases are built by the "Desktop release" GitHub workflow (Mac + Windows). Not shown on phones (the timer is desktop-only) or while presence is still loading.
 - Without the desktop app, sessions still run in the tab: navbar counter, tab title, time's-up overlay, sound and notification.
 
+## Settings
+Opened from the navbar menu → **Settings**: one small dialog (web only; the desktop timer has none). Saved in the browser; signed in, they sync to the account (`user_settings`), so every device gets the same ones. Last write wins.
+
+| Setting | Options | Behavior |
+|---|---|---|
+| **Timer in browser tab** | on (default) / off | Off: the tab title stays "Stint" while a session runs. Time's up still flashes the tab (it's the alert, not the timer). |
+| **Time format** | 12h / **24h** (default) | Event and session times: `14:30` or `2:30pm`. 12h ranges are compact: `9–10:30am`, `11am–1pm`. Editing an event shows its time the same way. Typing accepts both in either mode: `14:00-15:00`, `2-3pm` (the start takes the end's am/pm when it fits: `11-1pm` = 11am–1pm), `11am-1pm`. A time without am/pm is read as 24h (`5-5:30` = 5am). |
+| **Week starts on** | **Monday** (default) / Sunday | The month grid, the mobile week and its swipe. The weekly cell's goals / notes / backlog stay attached to the same week whichever day it starts on (they're keyed by the Monday inside the week). Week numbers stay ISO. |
+| **Notify me when time's up** | on (default) / off | The time's-up desktop notification. Turning it on asks the browser if it hasn't been asked yet. If the browser blocked it (the user refused before), the setting shows how to allow it in the site settings. **Reminder:** while it's on but the browser doesn't allow it, an amber dot shows on the navbar menu and "Notifications off" next to Settings, until it's allowed or turned off. |
+| **Desktop timer** | status | **Connected** (green): the widget is online for this account. **Requires sign in** (amber, signed out on web) + Sign in. **Not installed** (amber, signed in, no widget online) + Install for Mac / Windows; "Already installed? Open it and click Sign in." Phones / other systems: "available for Mac and Windows". |
+| **Danger zone: Delete account** | signed in only | Deletes the account and everything synced to it (calendar, projects, routines, settings). Confirm by typing `DELETE`. Then signed out on this device (its copy of "My calendar" is cleared). Function: `supabase/functions/delete-account`. |
+
 ## Tech stack
 
 | Concern | Choice | Notes |
@@ -223,8 +237,8 @@ Each holds three small labeled sections, stacked:
 | Drag & drop | dnd-kit (core + sortable) | Drag across days, the weekly and monthly cells, and within a day; auto-scrolls inside scrollable cells |
 | Menus / popovers | radix-ui | Context menu (copy / cut / paste / clear), the start overlay (Dialog), the project popover, the navbar menu (with the calendar switcher), the desktop notice |
 | Desktop timer | Tauri 2 (Rust shell) loading `/?widget` | Frameless always-on-top window, menu bar / tray icon, native notifications. See `prototype/desktop/README.md`. |
-| Dates | date-fns | Month grid (weeks start Monday), mobile week navigation, timeframe math, routine repeats |
-| Backend | Supabase (dev project): Postgres + row level security + realtime, email-code sign-in | Schema in `/supabase/migrations`, shared with the real product. Signed-in users' "My calendar" syncs between the web app and the desktop widget; last write wins per row. |
+| Dates | date-fns | Month grid (weeks start Monday or Sunday, per Settings), mobile week navigation, timeframe math, routine repeats |
+| Backend | Supabase (dev project): Postgres + row level security + realtime, email-code sign-in | Schema in `/supabase/migrations`, shared with the real product. Signed-in users' "My calendar" and settings sync between the web app and the desktop widget; last write wins per row. Edge functions: `desktop-link`, `delete-account`. |
 
 **No library needed:**
 - **Timer:** calculated from the start timestamp, so it stays accurate while the tab is in the background.
