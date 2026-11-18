@@ -3,6 +3,7 @@
 //   day:2026-11-12
 //   week:2026-11-09:goals      (week key = that week's Monday)
 //   month:2026-11:backlog
+//   session:<id>              (tasks inside a focus session, shown in its popup)
 export type Section = 'goals' | 'notes' | 'backlog'
 export type ContainerKey = string
 
@@ -31,6 +32,8 @@ export interface EventItem extends BaseItem {
   start: string // 'HH:mm'
   end: string // 'HH:mm'
   link: string | null
+  /** Free text, written in the event's popup. */
+  notes?: string
 }
 
 export interface SessionItem extends BaseItem {
@@ -42,6 +45,8 @@ export interface SessionItem extends BaseItem {
   focusedMin?: number
   /** Tentative: tasks checked off while this session was running. */
   taskIds?: string[]
+  /** Free text, written in the session's popup. Its own tasks are items in `session:<id>`. */
+  notes?: string
 }
 
 /** The running focus session (one at a time). Everything is derived from timestamps. */
@@ -80,13 +85,22 @@ export interface RoutineRule {
   skip: string[] // scheduled dates whose copy was deleted or converted
 }
 
+/** Ongoing work tracked by progress. Lives in the day it was started and shows on every day
+ *  from then until it reaches 100% (`doneOn`); while open, up to today. Deleting removes it everywhere. */
+export interface ProcessItem extends BaseItem {
+  type: 'process'
+  text: string
+  progress: number // 0–100
+  doneOn: string | null // 'yyyy-MM-dd' it reached 100%
+}
+
 export interface GoalItem extends BaseItem {
   type: 'goal'
   text: string
   done: boolean
 }
 
-export type Item = TaskItem | NoteItem | EventItem | SessionItem | RoutineItem | GoalItem
+export type Item = TaskItem | NoteItem | EventItem | SessionItem | RoutineItem | ProcessItem | GoalItem
 export type ItemType = Item['type']
 
 /** An item's own fields, without its identity/position (id, container, order, project). */

@@ -1,4 +1,4 @@
-import { format, getISOWeek } from 'date-fns'
+import { format } from 'date-fns'
 import { DropdownMenu } from 'radix-ui'
 import CheckIcon from 'pixelarticons/svg/check.svg?react'
 import ChevronLeftIcon from 'pixelarticons/svg/chevron-left.svg?react'
@@ -6,7 +6,7 @@ import ChevronRightIcon from 'pixelarticons/svg/chevron-right.svg?react'
 import MenuIcon from 'pixelarticons/svg/menu.svg?react'
 import Logomark from '@/assets/brand/logomark-stint.svg?react'
 import { cn } from '@/lib/utils'
-import { mondayIn, weekLabel } from '../lib/dates'
+import { weekLabel, weekName, weekNumberLabel } from '../lib/dates'
 import { signOut, useAuth } from '../lib/auth'
 import { useNotificationsNeedAttention, useSettingsOpen } from '../lib/settings'
 import { useIsMobile } from '../lib/useMedia'
@@ -37,7 +37,11 @@ function MobileNavbar() {
       </div>
       <nav className="flex h-40 items-center gap-4 border-t border-border pr-8 pl-12" aria-label="Week navigation">
         <span className="text-interactive text-foreground tabular-nums">{weekLabel(week)}</span>
-        <span className="text-[0.786rem] text-foreground-tertiary tabular-nums">W{getISOWeek(mondayIn(week))}</span>
+        {weekName(week) !== weekLabel(week) && (
+          <span className="text-[0.786rem] text-foreground-tertiary" title={weekNumberLabel(week)}>
+            {weekName(week)}
+          </span>
+        )}
         <span className="flex-1" />
         <button type="button" className={ghost} onClick={goToToday}>
           Today

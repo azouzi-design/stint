@@ -1,17 +1,23 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { forwardRef, useLayoutEffect, useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import Link from '@tiptap/extension-link'
 import StarterKit from '@tiptap/starter-kit'
 import { Popover } from 'radix-ui'
 import ClockIcon from 'pixelarticons/svg/clock.svg?react'
+import LoaderIcon from 'pixelarticons/svg/loader.svg?react'
 import LinkIcon from 'pixelarticons/svg/link.svg?react'
 import RepeatIcon from 'pixelarticons/svg/repeat.svg?react'
 import { cn } from '@/lib/utils'
+import { hasDetails } from '../lib/details'
+import { containerDate } from '../lib/routines'
 import { editText, materialize, parseTimeRange, type EditMode } from '../lib/parse'
 import { fromDoc, normalizeUrl, toDoc } from '../lib/rich'
+import { formatDuration, formatTime, timeframeMinutes } from '../lib/dates'
+import { useSettings } from '../lib/settings'
 import { useStore } from '../store'
 import type { Item, Repeat } from '../types'
 import { CheckboxMark, popoverClass, ProjectDot, ROW_H } from './ItemRow'
+import { EventTimeFields } from './EventTime'
 import { ProjectPicker } from './ProjectPicker'
 
 // Single line, plain text + links only.
@@ -58,14 +64,16 @@ const PICKER: PickerOption[] = [
   { label: 'Routine · daily', mode: 'routine', repeat: 'daily' },
   { label: 'Routine · weekly', mode: 'routine', repeat: 'weekly' },
   { label: 'Routine · monthly', mode: 'routine', repeat: 'monthly' },
+  { label: 'Process', mode: 'process' },
 ]
 
 const PLACEHOLDER: Record<EditMode, string> = {
   auto: 'Type, or / for more formats',
   task: 'Task',
   note: 'Note',
-  event: '10:00-10:30 Title  link (optional)',
+  event: '5pm 1h Meeting with Dave',
   routine: 'Routine',
+  process: 'Process 10%',
   goal: 'Add a goal',
 }
 
@@ -94,6 +102,8 @@ export function RowEditor({ container, item, afterId, inDay, sectionMode }: Prop
   const [linkDraft, setLinkDraft] = useState<string | null>(null) // non-null = link input open
   const [projectId, setProjectId] = useState<string | null>(item?.projectId ?? null)
   const [projectOpen, setProjectOpen] = useState(false) // `#` project picker
+  const [eventLink, setEventLink] = useState('') // link field of the event popup
+  const startRef = useRef<HTMLSelectElement>(null)
   const rowRef = useRef<HTMLDivElement>(null)
   const finished = useRef(false)
   const keyHandler = useRef<(e: KeyboardEvent) => boolean>(() => false)
@@ -102,6 +112,10 @@ export function RowEditor({ container, item, afterId, inDay, sectionMode }: Prop
   const menuOpen = inDay && !menuDismissed && text.startsWith('/')
   const query = text.slice(1).trim().toLowerCase()
   const options = menuOpen ? PICKER.filter((o) => o.label.toLowerCase().includes(query)) : []
+  const typedTime = parseTimeRange(text)
+  const preview: EditMode = mode === 'auto' && typedTime ? 'event' : mode
+  // Creating an event in a day: from `/event`, or as soon as a typed time is recognised.
+  const eventPopup = inDay && !item && preview === 'event' && !menuOpen
 
   const editor = useEditor({
     extensions,
@@ -157,13 +171,15 @@ export function RowEditor({ container, item, afterId, inDay, sectionMode }: Prop
         const prev = list
           .slice(0, item ? idx : idx + 1)
           .reverse()
-          .find((i) => i.type !== 'session')
+          .find((i) => i.type !== 'session' && i.type !== 'routine' && i.type !== 'process' && !hasDetails(i)) // rows edited in a popup (or grouped) are skipped
         if (prev) return s.startEditing({ container, id: prev.id, afterId: null })
       }
       return s.stopEditing()
     }
 
-    const fields = materialize(mode, md, repeat, item)
+    let fields = materialize(mode, md, repeat, item, containerDate(container))
+    // The event popup's link field (a link typed at the end of the row wins).
+    if (fields.type === 'event' && !fields.link && eventLink.trim()) fields = { ...fields, link: normalizeUrl(eventLink.trim()) }
     let id: string
     if (item) {
       id = item.id
@@ -189,6 +205,20 @@ export function RowEditor({ container, item, afterId, inDay, sectionMode }: Prop
     editor?.commands.clearContent(true)
     setMode(o.mode)
     if (o.repeat) setRepeat(o.repeat)
+  }
+
+  /** Event popup: put the picked time at the start of the row (replacing a typed one), keep the rest. */
+  function setEventTime(start: string, end: string) {
+    if (!editor) return
+    const md = fromDoc(editor.getJSON()).trimStart()
+    const typed = parseTimeRange(md)
+    const body = typed ? md.slice(typed.prefix.length).trimStart() : md
+    // Written the way rows show it: start + length ("17:00 30m …", "5pm 1.5h …").
+    const next = `${formatTime(start, useSettings.getState().timeFormat)} ${formatDuration(timeframeMinutes(start, end))} ${body}`
+    const hadFocus = editor.isFocused
+    editor.commands.setContent(toDoc(next))
+    setText(editor.getText())
+    if (hadFocus) editor.commands.focus('end')
   }
 
   function openLink() {
@@ -227,6 +257,11 @@ export function RowEditor({ container, item, afterId, inDay, sectionMode }: Prop
       }
       if (menuOpen && e.key === 'Escape') {
         setMenuDismissed(true)
+        return true
+      }
+      // Tab: from the row into the event popup's fields.
+      if (e.key === 'Tab' && !e.shiftKey && eventPopup) {
+        startRef.current?.focus()
         return true
       }
       const mod = e.metaKey || e.ctrlKey
@@ -295,8 +330,7 @@ export function RowEditor({ container, item, afterId, inDay, sectionMode }: Prop
   }
 
   const showLinkUi = linkDraft !== null || hasSelection
-  const popoverOpen = projectOpen || (menuOpen && options.length > 0) || showLinkUi
-  const preview: EditMode = mode === 'auto' && parseTimeRange(text) ? 'event' : mode
+  const popoverOpen = projectOpen || (menuOpen && options.length > 0) || showLinkUi || eventPopup
 
   return (
     <Popover.Root open={popoverOpen}>
@@ -337,7 +371,14 @@ export function RowEditor({ container, item, afterId, inDay, sectionMode }: Prop
           sideOffset={4}
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
-          onEscapeKeyDown={(e) => e.preventDefault()}
+          // While this popover is open, Radix takes Escape (in the row too), so it's handled here.
+          onEscapeKeyDown={(e) => {
+            e.preventDefault()
+            if (projectOpen || linkDraft !== null) return // they handle Escape themselves
+            if (menuOpen) return setMenuDismissed(true)
+            finish('stop')
+          }}
+          onBlur={onBlur} // leaving the popup's fields for elsewhere also saves and closes the row
           className={popoverClass}
         >
           {projectOpen ? (
@@ -401,6 +442,17 @@ export function RowEditor({ container, item, afterId, inDay, sectionMode }: Prop
                 </button>
               )}
             </form>
+          ) : !showLinkUi && eventPopup ? (
+            <EventPopup
+              ref={startRef}
+              start={typedTime?.start ?? null}
+              end={typedTime?.end ?? null}
+              onTime={setEventTime}
+              link={eventLink}
+              onLink={setEventLink}
+              onSave={() => finish('below')}
+              onClose={() => finish('stop')}
+            />
           ) : (
             <button
               type="button"
@@ -419,9 +471,56 @@ export function RowEditor({ container, item, afterId, inDay, sectionMode }: Prop
   )
 }
 
+/** Fields shown under a row while an event is being created: time (start list + length chips), link. */
+const EventPopup = forwardRef<
+  HTMLSelectElement,
+  {
+    start: string | null
+    end: string | null
+    onTime: (start: string, end: string) => void
+    link: string
+    onLink: (link: string) => void
+    onSave: () => void
+    onClose: () => void
+  }
+>(function EventPopup({ start, end, onTime, link, onLink, onSave, onClose }, ref) {
+  return (
+    <div
+      className="flex w-[18rem] flex-col gap-8 p-4"
+      // Clicks on the popup's background mustn't take the focus away from the row.
+      onMouseDown={(e) => {
+        if (!(e.target as HTMLElement).closest('input, select, textarea')) e.preventDefault()
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') onClose()
+        if (e.key === 'Enter' && (e.target as HTMLElement).tagName === 'INPUT') {
+          e.preventDefault()
+          onSave()
+        }
+      }}
+    >
+      <EventTimeFields ref={ref} start={start} end={end} onChange={onTime} />
+      <div className="flex h-24 items-center gap-8">
+        <LinkIcon className="size-12 shrink-0 text-icon" aria-hidden />
+        <input
+          value={link}
+          onChange={(e) => onLink(e.target.value)}
+          placeholder="Meeting link (optional)"
+          aria-label="Meeting link"
+          className="h-24 min-w-0 flex-1 rounded-4 bg-muted px-6 text-foreground outline-none placeholder:text-muted-foreground"
+        />
+      </div>
+      <p className="text-[0.786rem] text-foreground-tertiary">
+        {start ? 'Enter to save' : 'Type the title in the row, then pick a time'} · <kbd className="font-geist">Tab</kbd> to edit here
+      </p>
+    </div>
+  )
+})
+
 /** Leading marker that previews what the row will become. */
 function ModeMark({ mode, done }: { mode: EditMode; done: boolean }) {
   if (mode === 'note') return null
   if (mode === 'event') return <ClockIcon className="size-12 shrink-0 text-icon" aria-label="Event" />
+  if (mode === 'process') return <LoaderIcon className="size-12 shrink-0 text-icon" aria-label="Process" />
   return <CheckboxMark done={done} round={mode === 'goal'} />
 }

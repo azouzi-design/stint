@@ -20,7 +20,8 @@ import { useSettings } from '../lib/settings'
 import { markDragEnd, openRowMenu } from '../lib/touchMenu'
 import { useIsMobile } from '../lib/useMedia'
 import { canHold, useStore } from '../store'
-import type { Item } from '../types'
+import type { Item, Repeat } from '../types'
+import { parseRoutineGroupId, sessionTasksKey } from '../lib/details'
 import { useLists } from '../lib/lists'
 import { DayCell, MonthRow, WeekCell } from './Cells'
 import { RowView } from './ItemRow'
@@ -102,6 +103,19 @@ function dropTarget({ active, over }: DragMoveEvent, pointerY: number): { contai
   return { container: target.container, index: rest.findIndex((i) => i.id === overId) + (below ? 1 : 0) }
 }
 
+/** Dropping *into* a row instead of beside it: a task onto a focus session (it joins the session's
+ *  tasks) or onto a routine row (it joins that routine). null = an ordinary drop. */
+type Into = { kind: 'session'; id: string } | { kind: 'routine'; container: string; repeat: Repeat }
+function dropInto(item: Item | undefined, overId: string | undefined): Into | null {
+  if (item?.type !== 'task' || !overId) return null
+  if (overId.startsWith('into:')) {
+    const { container, repeat } = parseRoutineGroupId(overId.slice(5))
+    return { kind: 'routine', container, repeat }
+  }
+  const over = useStore.getState().items.find((i) => i.id === overId)
+  return over?.type === 'session' ? { kind: 'session', id: over.id } : null
+}
+
 const touchPoint = (e: Event) => {
   const t = 'touches' in e ? (e as TouchEvent).touches[0] ?? (e as TouchEvent).changedTouches[0] : null
   return t ? { x: t.clientX, y: t.clientY } : null
@@ -143,6 +157,7 @@ function DragAndDrop({ children }: { children: React.ReactNode }) {
   function onDragMove(e: DragMoveEvent) {
     const s = useStore.getState()
     const item = s.items.find((i) => i.id === e.active.id)
+    if (dropInto(item, e.over ? String(e.over.id) : undefined)) return // the target row highlights instead
     const target = dropTarget(e, pointerY.current)
     if (!item || !target || !canHold(item, target.container)) return
     const current = s.items.filter((i) => i.container === item.container && i.id !== item.id && i.order < item.order).length
@@ -162,6 +177,15 @@ function DragAndDrop({ children }: { children: React.ReactNode }) {
       endDrag()
       setTimeout(() => openRowMenu(id, touch.x, touch.y))
       return
+    }
+    const into = dropInto(item, e.over ? String(e.over.id) : undefined)
+    if (into?.kind === 'session') {
+      s.moveItem(id, sessionTasksKey(into.id), Infinity)
+      return endDrag()
+    }
+    if (into?.kind === 'routine') {
+      s.taskToRoutine(id, into.container, into.repeat)
+      return endDrag()
     }
     const dropIn = e.over ? overContainer(String(e.over.id)) : undefined
     if (item && dropIn && canHold(item, dropIn)) s.adaptToContainer(id) // e.g. a goal dropped into a day becomes a task

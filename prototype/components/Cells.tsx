@@ -1,14 +1,17 @@
 import { useContext } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext } from '@dnd-kit/sortable'
-import { format, getISOWeek } from 'date-fns'
+import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
-import { mondayIn } from '../lib/dates'
+import { weekLabel, weekName, weekNumberLabel } from '../lib/dates'
+import { processesOn, routineGroups } from '../lib/details'
+import { useShallow } from 'zustand/react/shallow'
+import type { ProcessItem } from '../types'
 import type { EditMode } from '../lib/parse'
 import { PreviewContext, SECTION_LABEL, SECTIONS, type SectionCells } from '../lib/lists'
 import { useStore } from '../store'
 import type { Item, Section } from '../types'
-import { EmptyRow, ItemRow, RowView, StaticEmptyRow } from './ItemRow'
+import { EmptyRow, GroupView, ItemRow, ProcessGroupRow, RoutineGroupRow, RowView, StaticEmptyRow } from './ItemRow'
 import { RowEditor } from './RowEditor'
 import { noShift } from './dnd'
 
@@ -33,20 +36,37 @@ export function RowList(props: RowListProps) {
   return useContext(PreviewContext) ? <StaticRowList {...props} /> : <LiveRowList {...props} />
 }
 
-function StaticRowList({ items, min = 0 }: RowListProps) {
+/** Days show their routines as one row per repeat, then their processes as one row, at the top;
+ *  the other items as rows. (Processes are carried over from the day they started.) */
+function useDayGroups(container: string, items: Item[], inDay: boolean) {
+  const date = inDay ? container.slice(4) : null
+  const processes = useStore(useShallow((s) => (date ? processesOn(s.items, date) : NO_PROCESSES)))
+  if (!inDay) return { groups: [], processes, rest: items }
+  return { groups: routineGroups(items), processes, rest: items.filter((i) => i.type !== 'routine' && i.type !== 'process') }
+}
+const NO_PROCESSES: ProcessItem[] = []
+
+function StaticRowList({ container, items: all, min = 0, inDay = false }: RowListProps) {
+  const { groups, processes, rest: items } = useDayGroups(container, all, inDay)
+  const groupRows = groups.length + (processes.length ? 1 : 0)
   return (
     <div>
+      {groups.map((g) => (
+        <GroupView key={g.repeat} container={container} repeat={g.repeat} tasks={g.tasks} />
+      ))}
+      {processes.length > 0 && <GroupView container={container} processes={processes} />}
       {items.map((item) => (
         <RowView key={item.id} item={item} />
       ))}
-      {Array.from({ length: Math.max(min - items.length, 1) }, (_, i) => (
+      {Array.from({ length: Math.max(min - items.length - groupRows, 1) }, (_, i) => (
         <StaticEmptyRow key={`empty-${i}`} />
       ))}
     </div>
   )
 }
 
-function LiveRowList({ container, items, min = 0, inDay = false, sectionMode }: RowListProps) {
+function LiveRowList({ container, items: all, min = 0, inDay = false, sectionMode }: RowListProps) {
+  const { groups, processes, rest: items } = useDayGroups(container, all, inDay)
   const editing = useStore((s) => (s.editing?.container === container ? s.editing : null))
   const startEditing = useStore((s) => s.startEditing)
   const editorProps = { container, inDay, sectionMode }
@@ -56,7 +76,10 @@ function LiveRowList({ container, items, min = 0, inDay = false, sectionMode }: 
   )
   const draftAnchored = !!draft?.afterId && items.some((i) => i.id === draft.afterId)
 
-  const rows: React.ReactNode[] = []
+  const rows: React.ReactNode[] = groups.map((g) => (
+    <RoutineGroupRow key={`routines-${g.repeat}`} container={container} repeat={g.repeat} tasks={g.tasks} />
+  ))
+  if (processes.length) rows.push(<ProcessGroupRow key="processes" container={container} processes={processes} />)
   for (const item of items) {
     rows.push(
       editing?.id === item.id ? (
@@ -137,7 +160,9 @@ export function SectionBlock({ section, label, cell, min }: { section: Section; 
 export function WeekCell({ start, cells }: { start: Date; cells: SectionCells }) {
   return (
     <div className={cn(CELL_H, 'flex min-w-0 flex-col bg-card')}>
-      <div className={cn(CELL_HEADER, 'text-foreground-tertiary')}>Week {getISOWeek(mondayIn(start))}</div>
+      <div className={cn(CELL_HEADER, 'text-foreground-tertiary')} title={`${weekLabel(start)} · ${weekNumberLabel(start)}`}>
+        {weekName(start)}
+      </div>
       <div className="cell-scroll min-h-0 flex-1 overflow-y-auto border-t border-border">
         {SECTIONS.map((s) => (
           <SectionBlock key={s} section={s} label={SECTION_LABEL[s]} cell={cells[s]} />

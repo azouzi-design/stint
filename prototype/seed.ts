@@ -157,7 +157,7 @@ export function buildSeed(now = new Date()): Item[] {
     // Layout: routines, then time-bound items sorted by time, then tasks, then notes
     const minutesOf = (it: Item) =>
       it.type === 'event' ? timeframeMinutes('0:00', it.start) : it.type === 'session' ? isoMinutes(day.toISOString(), it.startedAt) : 0
-    const rank = (it: Item) => ({ routine: 0, session: 1, event: 1, task: 2, goal: 2, note: 3 })[it.type]
+    const rank = (it: Item) => ({ routine: 0, process: 0, session: 1, event: 1, task: 2, goal: 2, note: 3 })[it.type]
     dayItems
       .sort((a, b) => rank(a) - rank(b) || minutesOf(a) - minutesOf(b))
       .forEach((it, i) => (it.order = i))
@@ -193,6 +193,23 @@ export function buildSeed(now = new Date()): Item[] {
       items.push({ id: id(), container: monthKey(month, 'backlog'), order: i, type: 'task', text, done: false, projectId: null }),
     )
   }
+
+  // Processes: carried over from the day they started until they reach 100%
+  const ymd = (d: Date) => format(d, 'yyyy-MM-dd')
+  const process = (text: string, startedDaysAgo: number, progress: number, doneDaysAgo: number | null, projectId: string | null) =>
+    items.push({
+      id: id(),
+      container: dayKey(addDays(today, -startedDaysAgo)),
+      order: -1,
+      type: 'process',
+      text,
+      progress,
+      doneOn: doneDaysAgo === null ? null : ymd(addDays(today, -doneDaysAgo)),
+      projectId,
+    })
+  process('Invoice PC repair claim', 9, 40, null, 'p-admin')
+  process('Portfolio case study write-up', 5, 70, null, 'p-portfolio')
+  process('Passport renewal', 16, 100, 3, null)
 
   return items
 }

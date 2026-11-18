@@ -4,6 +4,7 @@ import {
   eachWeekOfInterval,
   endOfMonth,
   format,
+  getISOWeek,
   isSameMonth,
   parseISO,
   startOfMonth,
@@ -44,6 +45,19 @@ export function weekLabel(start: Date): string {
     ? `${format(start, 'MMM d')} – ${format(end, 'd')}`
     : `${format(start, 'MMM d')} – ${format(end, 'MMM d')}`
 }
+
+/** How a week is named: "This week", "Last week", "Next week", otherwise its dates ("Nov 2 – 8").
+ *  (Week numbers only appear in tooltips: most people don't plan by them.) */
+export function weekName(start: Date, today = new Date()): string {
+  const diff = Math.round((weekStartOf(start).getTime() - weekStartOf(today).getTime()) / (7 * 864e5))
+  if (diff === 0) return 'This week'
+  if (diff === -1) return 'Last week'
+  if (diff === 1) return 'Next week'
+  return weekLabel(start)
+}
+
+/** "Week 47" (ISO), for tooltips. */
+export const weekNumberLabel = (start: Date) => `Week ${getISOWeek(mondayIn(start))}`
 
 /** The Monday inside a week (whatever day it starts on). Weekly cells are keyed by it, so their
  *  items stay put when the week start setting changes. */

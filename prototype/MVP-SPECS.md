@@ -35,6 +35,15 @@ Parts 1–5 were built on the `prototype` branch and merged into `main`. Later i
   - [x] 22. Settings dialog: tab timer, 12h / 24h, week start, notifications, desktop timer status, delete account (synced to the account)
 - [x] **Part 9: Accounts**
   - [x] 23. Sign-in required (web + desktop), Continue with Google, one-click desktop sign-in through the web app
+- [x] **Part 10: Item details**
+  - [x] 24. Details popup: notes (full text), events (all fields + notes), focus sessions (tasks + notes)
+  - [x] 25. Routines grouped per day: one row per repeat (monthly, weekly, daily), finished when all its tasks are
+  - [x] 26. Processes: progress 0–100%, carried over day to day until 100% or deleted
+  - [x] 27. Drag a task into a focus session or a routine row
+  - [x] 28. Click a project dot (rows + popups) to assign / change / remove / create projects
+  - [x] 29. Easier events: `5pm Call Jon` / `5pm 1h Call Jon`, event popup with start list + length chips + link
+  - [x] 30. Rows show start + duration (`5:00 30m`); processes take a typed `10%` and finish on the day they're set to 100%
+  - [x] 31. Weeks named This / Last / Next week or by their dates, instead of week numbers
 
 ## Purpose
 An interactive front-end for testing, playing with, and defining what the product should eventually be.
@@ -103,21 +112,40 @@ The goal is to keep the speed and density of the spreadsheet while adding struct
 | Type | Fields / behavior |
 |---|---|
 | **Task** | Checkable. The default type. Unfinished tasks stay on their day (no carry-over). |
-| **Focus session** | States: `active` (running now) or `finished`. Cannot be scheduled ahead of time; sessions only exist once started. Can be paused, extended, stopped early, or run with no timecap (counts up until stopped). There's no separate name: a session is labeled automatically by its timeframe and duration, e.g. `5:00–6:30 / 1.5h`. |
-| **Note** | Free text |
-| **Event** | Title, timeframe (`5:00–5:30`), link. The duration is calculated from the timeframe. The link opens in one click, so the user can join the meeting as it starts. |
-| **Routine** | A task that repeats daily, weekly, or monthly. Each copy is checked off separately. The user can turn it off from any copy. Shown as a task with a repeat icon. See **Routines** below. |
+| **Focus session** | States: `active` (running now) or `finished`. Cannot be scheduled ahead of time; sessions only exist once started. Can be paused, extended, stopped early, or run with no timecap (counts up until stopped). There's no separate name: a session is labeled automatically by its start time and focused duration, e.g. `5:00 1.5h` (the full timeframe is in its popup). Holds its own tasks and notes (in its popup); the row shows `done/total tasks`. |
+| **Note** | Free text, any length. The row shows the first sentence on one line (cut with `…`); the popup holds the whole text. |
+| **Event** | Title, timeframe (`5:00–5:30`), link, notes. The row shows the start time and duration, the way it's typed: `5:00 30m Meet Dave` (the full timeframe is in its popup and tooltip). The link opens in one click, so the user can join the meeting as it starts. |
+| **Routine** | A task that repeats daily, weekly, or monthly. Each copy is checked off separately. In a day, routines show grouped: one row per repeat. See **Routines** below. |
+| **Process** | Ongoing work tracked by progress (0–100%), carried over from day to day. See **Processes** below. |
+
+### Details popup
+Clicking a note, event, focus session, routine row, or processes row opens a small popup beside the row (top edges aligned; it flips to the other side near the screen edge). Everything in it saves as it's changed; `Escape` or clicking outside closes it.
+- **Note:** a text area with the whole note. Emptying it deletes the note.
+- **Event:** title, time (start list + length chips, see **Creating items**; the event re-sorts by time), link with a Join button, project, notes.
+- **Focus session:** focused time (and the planned time while running), timeframe, its tasks (type to add, check off, clear to remove), the tentative "finished during this session" list, notes.
+- **Routine row:** that routine's tasks for the day (check off, edit, add, × removes it from this day on).
+- **Processes row:** each process with its text and a 0–100% slider; add one; × deletes it from every day.
+- Events and sessions with notes show a small notes mark on their row.
 
 ### Routines
-- Created in a day with `/routine · daily|weekly|monthly`. That day is the first copy, and it sets the weekday (weekly) or day of the month (monthly; clamped in short months).
-- Copies are generated for every month the user views, at the top of each day.
+- Created in a day with `/routine · daily|weekly|monthly`, from a routine row's popup ("Add a task"), or by dropping a task onto a routine row. That day is the first copy, and it sets the weekday (weekly) or day of the month (monthly; clamped in short months).
+- Copies are generated for every month the user views.
+- **Grouped in the day:** a day shows its routine copies as one row per repeat, at the top, in this order: `Monthly routine`, `Weekly routine`, `Daily routine`, each with its count (`3/5`). The row is marked finished (struck through) only when all its tasks are. Clicking it lists the tasks in a popup.
 - Editing a copy's text or project applies to that copy and all later ones (earlier copies keep their history).
 - Deleting a copy (Clear, Cut, Backspace) removes only that day; it isn't regenerated.
 - Changing a copy's repeat restarts the routine from that day with the new repeat.
 - **Stop repeating** (right-click): keeps this copy and earlier ones, removes later ones.
 - Dragging a copy to another day keeps it linked to its original date.
 
+### Processes
+- Created in a day with `/process`, or from a processes row's popup. That day is its start. A percentage at the end sets its progress: `Move flat 10%` (placeholder: `Process 10%`).
+- A day shows its processes as one `Processes` row (after the routines), with `done/total`. The popup has each process's text and a 0–100% slider.
+- Shown on every day from its start until the day it's set to 100% on: it stays on that day (at 100%, counted as done) and stops carrying over to the next days. While open it shows up to today, not on future days (except its own start day). Moving it back below 100% reopens it.
+- Progress is one value (no per-day history). Deleting a process removes it from every day.
+
 ### Weekly / monthly cells
+- **Week names:** a weekly cell is named by when it is, not by a week number: **This week**, **Last week**, **Next week**, otherwise its dates (`Nov 2 – 8`, `Oct 26 – Nov 1`). The ISO week number is in the tooltip. Same naming in the mobile week view and in popups (`This week · Notes`).
+
 Each holds three small labeled sections, stacked:
 - **Goals:** checkable, with a distinct visual design so they stand out from regular items.
 - **Notes:** plain text.
@@ -125,12 +153,13 @@ Each holds three small labeled sections, stacked:
 
 ## Projects
 - Projects are represented by **colors**, shown as a small **color dot** on the row.
-- They can be assigned to anything: tasks, sessions, notes, goals, events, backlog items, routines.
+- They can be assigned to anything: tasks, sessions, notes, goals, events, backlog items, routines, processes, and the tasks inside a focus session.
 - **One project per item.**
 - **Colors:** a fixed palette defined in OKLCH, with consistent lightness and chroma, so every color has the same visual weight.
-- **Assigning:** two ways, both opening the same project list:
+- **Assigning:** three ways, all opening the same project list:
   - typing `#` while writing a row (like `/` for types)
   - right-click → "Project…" on an existing item
+  - **clicking the color dot**, on a row or inside a details popup. Rows and popup lines without a project show an empty dot on hover; the event and focus session popups show a "Project" line (dot + name, or "Add project").
 - They're created directly in the calendar, with no separate projects page:
   1. The user chooses to assign an item to a project.
   2. A small list of existing projects appears, with a **Create project** button.
@@ -153,17 +182,25 @@ Each holds three small labeled sections, stacked:
   - Selecting text shows a small "Link ⌘K" button below the row; clicking it or pressing `⌘K` opens a link field. An existing link can be edited or removed the same way.
   - Pasting a URL over selected text links it; typing a URL turns it into a link automatically.
   - Stored as markdown-style text (`Call [Jon](https://…)`).
-- **Event shortcut:** typing a time range at the start of a row (`5:00-5:30 Meet Dave`) turns it into an event automatically, the way the user writes in the spreadsheet today. `/event` also works. This is the starting approach and should be validated in the prototype.
-  - A URL at the end of an event row becomes the event's join link: `14:00-15:00 Call with Jon https://meet.google.com/abc`.
-  - An event without a time range is saved as a task.
-  - Editing an event shows it as text (`14:00-15:00 Call with Jon https://…`), so the time and link are changed by editing the text.
+- **Events: typed or picked.** Power users type everything in the row; everyone else picks the time in a popup.
+  - **Typing:** a time at the start of a row turns it into an event:
+    - a start time alone: `5pm Call Jon` = 17:00–17:30 (default length **30 min**);
+    - a start time and a length: `5pm 1h Call Jon`, `17:00 45m Standup`, `9:30am 1.5h …`, `2pm 90min …`, `5pm 1h30 …`;
+    - a range, as before: `5-6pm …`, `14:00-15:30 …`.
+    - A start time needs am/pm or a colon (`5pm`, `17:00`), so `5 things to buy` stays a task.
+  - **Event popup:** opens under the row as soon as `/event` is picked, or as soon as a typed time is recognized. It has a **start list** (15-minute steps, in the Settings time format), **length chips** (15m, 30m, 45m, 1h, 1.5h, 2h) showing the end time, and a **meeting link** field. Picking a time rewrites the time at the start of the row (as start + length: `17:00 30m …`), so the row and the popup always match. Picking a length with no start uses the next quarter hour.
+  - Keys: `Tab` moves from the row into the popup; `Enter` saves (in the row or the link field); `Escape` saves and closes.
+  - A URL at the end of an event row also becomes its join link: `14:00-15:00 Call with Jon https://meet.google.com/abc` (it wins over the link field).
+  - An event without a time is saved as a task.
+  - An event is edited in its details popup (title, time, link, notes).
 - **Weekly / monthly sections:** the type is fixed by the section (Goals → goal, Notes → note, Backlog → task). No `/` picker or event shortcut there.
 - **Editing keys:** `Enter` saves and opens a new row below; `Escape` or clicking away saves and closes; `Backspace` on an empty row deletes it and moves to the row above. A row whose text is cleared is deleted.
-- **Clicking:** a row opens it for editing; a checkbox toggles it; a link opens in a new tab without editing the row.
+- **Clicking:** a task or goal row opens it for editing; a note, event, focus session, routine row or processes row opens its details popup; a checkbox toggles it; a link opens in a new tab without editing the row.
 
 ### Ordering & moving
 - **Time-bound items** (events, focus sessions) sort themselves by time by default. The user can still drag them elsewhere.
 - **Drag & drop:** anything can be dragged anywhere on the visible calendar (within a day, between days, into the weekly or monthly cells).
+  - **Into a row:** a task dropped onto a focus session joins the session's tasks; onto a routine row, it joins that routine from that day on. The target row is outlined while the task is over it. Routine and processes rows themselves aren't draggable.
   - The row moves live while dragging, leaving a faded placeholder where it will land: above or below the row under the pointer, depending on which half the pointer is over.
   - A drop where the item can't go (a session onto a weekly cell) puts it back where it started.
 - **Time sorting:** new events (typed or via `/event`) and events whose time is edited are placed in time order among the day's other events and sessions. Dragged and pasted rows keep the position the user chose.
@@ -225,7 +262,7 @@ Opened from the navbar menu → **Settings**: one small dialog (web only; the de
 |---|---|---|
 | **Timer in browser tab** | on (default) / off | Off: the tab title stays "Stint" while a session runs. Time's up still flashes the tab (it's the alert, not the timer). |
 | **Time format** | 12h / **24h** (default) | Event and session times: `14:30` or `2:30pm`. 12h ranges are compact: `9–10:30am`, `11am–1pm`. Editing an event shows its time the same way. Typing accepts both in either mode: `14:00-15:00`, `2-3pm` (the start takes the end's am/pm when it fits: `11-1pm` = 11am–1pm), `11am-1pm`. A time without am/pm is read as 24h (`5-5:30` = 5am). |
-| **Week starts on** | **Monday** (default) / Sunday | The month grid, the mobile week and its swipe. The weekly cell's goals / notes / backlog stay attached to the same week whichever day it starts on (they're keyed by the Monday inside the week). Week numbers stay ISO. |
+| **Week starts on** | **Monday** (default) / Sunday | The month grid, the mobile week and its swipe. The weekly cell's goals / notes / backlog stay attached to the same week whichever day it starts on (they're keyed by the Monday inside the week). Week numbers (ISO) only show in tooltips. |
 | **Notify me when time's up** | on (default) / off | The time's-up desktop notification. Turning it on asks the browser if it hasn't been asked yet. If the browser blocked it (the user refused before), the setting shows how to allow it in the site settings. **Reminder:** while it's on but the browser doesn't allow it, an amber dot shows on the navbar menu and "Notifications off" next to Settings, until it's allowed or turned off. |
 | **Desktop timer** | status | **Connected** (green): the widget is online for this account. **Not installed** (amber, no widget online) + Install for Mac / Windows; "Already installed? Open it and click Sign in." Phones / other systems: "available for Mac and Windows". |
 | **Danger zone: Delete account** | signed in only | Deletes the account and everything synced to it (calendar, projects, routines, settings). Confirm by typing `DELETE`. Then back to the sign-in screen on this device (its copy of "My calendar" is cleared). Function: `supabase/functions/delete-account`. |
@@ -249,7 +286,7 @@ Opened from the navbar menu → **Settings**: one small dialog (web only; the de
 - **Timer:** calculated from the start timestamp, so it stays accurate while the tab is in the background.
 - **End-of-session alert:** Web Audio / a short sound file, `document.title`, a favicon swap, and the Notifications API (`new Notification`, no service worker or server needed while the tab is open).
 - **Mobile week swipe:** CSS scroll-snap.
-- **Event shortcut (`5:00-5:30 …`):** a regex.
+- **Event shortcut (`5pm 1h …`, `5:00-5:30 …`):** a regex (`lib/parse.ts`).
 - **Routine repeats:** computed with date-fns.
 
 ## Tentative: linking sessions to tasks

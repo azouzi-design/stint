@@ -58,9 +58,14 @@ interface State {
   /** Item whose project picker is open from the right-click menu (not persisted). */
   projectPickerFor: string | null
   openProjectPicker: (id: string | null) => void
+  /** Item whose details popup is open (not persisted). */
+  detailsFor: string | null
+  openDetails: (id: string | null) => void
 
   /** Turn a day item into the first copy of a repeating routine. */
   makeRoutine: (id: string, repeat: Repeat) => void
+  /** Drop a task into a day's routine group: it becomes a routine task repeating from that day. */
+  taskToRoutine: (id: string, container: string, repeat: Repeat) => void
   /** Stop a routine after this copy: later copies are removed. */
   stopRoutine: (id: string) => void
   /** Generate missing routine copies for the visible month. */
@@ -303,7 +308,9 @@ export const useStore = create<State>()(
       removeItem: (id) =>
         set((s) => {
           const item = s.items.find((i) => i.id === id)
-          return { items: s.items.filter((i) => i.id !== id), rules: skipRoutineCopy(s.rules, item) }
+          // A session's own tasks go with it.
+          const items = s.items.filter((i) => i.id !== id && i.container !== `session:${id}`)
+          return { items, rules: skipRoutineCopy(s.rules, item) }
         }),
 
       toggleDone: (id) =>
@@ -314,7 +321,7 @@ export const useStore = create<State>()(
           let items = s.items.map((i) => (i.id === id ? ({ ...i, done } as Item) : i))
           // Tentative session ↔ task link: tasks checked off during a session count toward it.
           const a = s.activeSession
-          if (a && item.type === 'task') {
+          if (a && item.type === 'task' && !item.container.startsWith('session:')) {
             items = items.map((i) => {
               if (i.id !== a.itemId || i.type !== 'session') return i
               const ids = (i.taskIds ?? []).filter((t) => t !== id)
@@ -404,6 +411,8 @@ export const useStore = create<State>()(
       deleteProject: (id) => set((s) => ({ projects: s.projects.map((p) => (p.id === id ? { ...p, deleted: true } : p)) })),
       projectPickerFor: null,
       openProjectPicker: (projectPickerFor) => set({ projectPickerFor }),
+      detailsFor: null,
+      openDetails: (detailsFor) => set({ detailsFor, editing: null }),
 
       makeRoutine: (id, repeat) =>
         set((s) => {
@@ -433,6 +442,15 @@ export const useStore = create<State>()(
           const { from, to } = viewRange(s.viewMonth)
           return { rules: [...rules, rule], items: generateRoutines(items, [rule], from, to) }
         }),
+
+      taskToRoutine: (id, container, repeat) => {
+        const item = get().items.find((i) => i.id === id)
+        if (item?.type !== 'task') return
+        const routines = listOf(get().items, container).filter((i) => i.type === 'routine' && i.id !== id).length
+        get().moveItem(id, container, routines) // with the day's other routines, at the top
+        get().updateItem(id, { type: 'routine', text: item.text, done: item.done, repeat })
+        get().makeRoutine(id, repeat)
+      },
 
       stopRoutine: (id) =>
         set((s) => {
@@ -498,7 +516,7 @@ export const useStore = create<State>()(
           activeSession: null,
           items:
             focusedMs < MIN_SAVED_MS
-              ? s.items.filter((i) => i.id !== a.itemId) // started by accident: discard
+              ? s.items.filter((i) => i.id !== a.itemId && i.container !== `session:${a.itemId}`) // started by accident: discard
               : s.items.map((i) =>
                   i.id === a.itemId && i.type === 'session'
                     ? { ...i, status: 'finished', endedAt, focusedMin: Math.round(focusedMs / 60_000) }

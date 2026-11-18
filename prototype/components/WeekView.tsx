@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from 'react'
-import { addDays, addWeeks, format, getISOWeek, isSameDay } from 'date-fns'
+import { addDays, addWeeks, format, isSameDay } from 'date-fns'
 import { cn } from '@/lib/utils'
-import { dayKey, mondayIn, monthForWeek, monthKey, weekKey } from '../lib/dates'
+import { dayKey, monthForWeek, monthKey, weekKey, weekName } from '../lib/dates'
 import { useSettings } from '../lib/settings'
 import { useStore } from '../store'
 import { PreviewContext, SECTION_LABEL, SECTIONS, useLists, type SectionCells } from '../lib/lists'
@@ -101,7 +101,7 @@ function WeekView({ start }: { start: Date }) {
           </section>
         )
       })}
-      <Sections title={`Week ${getISOWeek(mondayIn(start))}`} cells={sections((s) => weekKey(start, s))} />
+      <Sections title={weekName(start)} cells={sections((s) => weekKey(start, s))} />
       <Sections title={format(month, 'MMMM')} cells={sections((s) => monthKey(month, s))} />
     </div>
   )
