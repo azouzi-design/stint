@@ -36,6 +36,9 @@ Release only when `src-tauri/` changes (window, tray, plugins, permissions).
 Keep a backup in a password manager: without it, installed apps can never receive updates again.
 The public half is in `tauri.conf.json` (`plugins.updater.pubkey`).
 
+**Opens at login:** switched on at the first launch (0.2.2+), with no switch in the app: Stint only
+works while it runs. Turned off in the system settings (Login Items / Startup apps), it stays off.
+
 **Unsigned for now:** Mac shows "Open Anyway" (System Settings → Privacy & Security) on first launch,
 Windows shows "Windows protected your PC" → More info → Run anyway. Updates don't show these again.
 
