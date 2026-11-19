@@ -267,6 +267,11 @@ Opened from the navbar menu → **Settings**: one small dialog (web only; the de
 | **Desktop timer** | status | **Connected** (green): the widget is online for this account. **Not installed** (amber, no widget online) + Install for Mac / Windows; "Already installed? Open it and click Sign in." Phones / other systems: "available for Mac and Windows". |
 | **Danger zone: Delete account** | signed in only | Deletes the account and everything synced to it (calendar, projects, routines, settings). Confirm by typing `DELETE`. Then back to the sign-in screen on this device (its copy of "My calendar" is cleared). Function: `supabase/functions/delete-account`. |
 
+Below the settings: links to the **Privacy Policy** and **Terms of Use** (new tab).
+
+## Legal pages
+`/privacy` and `/terms`: static pages, no sign-in needed (`prototype/legal`, built as their own pages). Linked from the sign-in screen ("By continuing, you agree to…") and Settings; the privacy URL goes in the Microsoft Store listing. Run by Ahmed Amir Azouzi as an individual, Tunisian law, contact hello@azouzi.design, free for now. **Keep them true:** adding analytics, payments, a new provider or new data means updating these pages (and their date).
+
 ## Tech stack
 
 | Concern | Choice | Notes |

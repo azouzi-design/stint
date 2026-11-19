@@ -17,5 +17,16 @@ export default defineConfig({
     },
   },
   server: { port: 5174 },
-  build: { outDir: path.resolve(__dirname, 'dist-prototype'), emptyOutDir: true },
+  build: {
+    outDir: path.resolve(__dirname, 'dist-prototype'),
+    emptyOutDir: true,
+    // The app, plus the static Privacy Policy and Terms pages (/privacy, /terms).
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'prototype/index.html'),
+        privacy: path.resolve(__dirname, 'prototype/privacy/index.html'),
+        terms: path.resolve(__dirname, 'prototype/terms/index.html'),
+      },
+    },
+  },
 })

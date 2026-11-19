@@ -28,6 +28,17 @@ export function SignInScreen() {
           }
         />
       </div>
+      <p className="mt-16 max-w-[22rem] text-center text-[0.786rem] text-foreground-tertiary">
+        By continuing, you agree to the{' '}
+        <a href="/terms" className="underline underline-offset-2 hover:text-foreground">
+          Terms
+        </a>{' '}
+        and{' '}
+        <a href="/privacy" className="underline underline-offset-2 hover:text-foreground">
+          Privacy Policy
+        </a>
+        .
+      </p>
     </div>
   )
 }

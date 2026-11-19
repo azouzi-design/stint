@@ -76,6 +76,14 @@ function SettingsBody() {
         <DesktopRow />
       </Group>
       {signedIn && <DangerZone />}
+      <div className="flex gap-16 text-[0.786rem] text-foreground-tertiary">
+        <a href="/privacy" target="_blank" rel="noreferrer" className="hover:text-foreground">
+          Privacy Policy
+        </a>
+        <a href="/terms" target="_blank" rel="noreferrer" className="hover:text-foreground">
+          Terms of Use
+        </a>
+      </div>
     </div>
   )
 }
