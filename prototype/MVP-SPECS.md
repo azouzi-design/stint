@@ -70,7 +70,7 @@ An interactive front-end for testing, playing with, and defining what the produc
 ### Navbar
 - **Left:** Stint logomark + a small, seamless "Start a Stint" button showing its shortcut (`⌘K` / `Ctrl K`). Once a session starts, a compact running counter (14px, 7-segment font) and its controls show in its place.
 - **Month navigation:** previous / next month + a "Today" control in the navbar.
-- **Far right:** menu icon. Holds anything that doesn't fit the calendar view (profile, advanced settings, etc.). It holds a **calendar switcher** — *Sample data* (seeded, with "Reset sample data") or *My calendar* (starts empty; whatever you add is saved). Each calendar keeps its own saved items, projects and routines; switching finishes a running session first. Below it, **Settings** (see Settings), the account's email and Sign out.
+- **Far right:** a small **Guide** button (book icon; icon only on mobile) that opens `/guide` in a new tab, then the menu icon. Holds anything that doesn't fit the calendar view (profile, advanced settings, etc.). It holds a **calendar switcher** — *Sample data* (seeded, with "Reset sample data") or *My calendar* (starts empty; whatever you add is saved). Each calendar keeps its own saved items, projects and routines; switching finishes a running session first. Below it, **Settings** (see Settings), the account's email and Sign out, and at the bottom small **Privacy Policy** · **Terms of Use** links (new tab).
 
 ### Calendar (desktop: month)
 - **Columns:** Monday → Sunday, plus an 8th column per week for **Weekly goals, notes, backlog**.
@@ -269,8 +269,11 @@ Opened from the navbar menu → **Settings**: one small dialog (web only; the de
 
 Below the settings: links to the **Privacy Policy** and **Terms of Use** (new tab).
 
-## Legal pages
-`/privacy` and `/terms`: static pages, no sign-in needed (`prototype/legal`, built as their own pages). Linked from the sign-in screen ("By continuing, you agree to…") and Settings; the privacy URL goes in the Microsoft Store listing. Run by Ahmed Amir Azouzi as an individual, Tunisian law, contact hello@azouzi.design, free for now. **Keep them true:** adding analytics, payments, a new provider or new data means updating these pages (and their date).
+## Public pages
+`/guide`, `/privacy` and `/terms`: static pages, no sign-in needed (`prototype/site`, each built as its own page; the app's entry renders them too if a host sends those paths to it).
+
+- **Guide** (`site/Guide.tsx`): 1. **Install the desktop timer**: Mac / Windows switch (picks the visitor's system), steps past the unsigned-app warnings (Mac: Done → System Settings → Privacy & Security → Open Anyway; Windows: More info → Run anyway), then Sign in. 2. **The basics**: 8 short cards (typing in a day, `/`, events, projects, focus session, time's up, moving, sync). 3. **If something's not working**: collapsible answers (Desktop app required, "damaged" on Mac, notifications, uninstall, contact). Screenshots go in `public/guide/<name>.png`; until a file exists, a placeholder says what to capture. Linked from the navbar (Guide) and the "Desktop app required" notice ("Step-by-step guide"). **Keep it true:** when a basic behavior changes, update its card.
+- **Privacy / Terms** (`site/Legal.tsx`): linked from the sign-in screen ("By continuing, you agree to…"), the navbar menu and Settings; the privacy URL goes in the Microsoft Store listing (on hold). Run by Ahmed Amir Azouzi as an individual, Tunisian law, contact hello@azouzi.design, free for now. **Keep them true:** adding analytics, payments, a new provider or new data means updating these pages (and their date).
 
 ## Tech stack
 

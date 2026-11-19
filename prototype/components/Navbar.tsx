@@ -3,6 +3,7 @@ import { DropdownMenu } from 'radix-ui'
 import CheckIcon from 'pixelarticons/svg/check.svg?react'
 import ChevronLeftIcon from 'pixelarticons/svg/chevron-left.svg?react'
 import ChevronRightIcon from 'pixelarticons/svg/chevron-right.svg?react'
+import BookIcon from 'pixelarticons/svg/book-open.svg?react'
 import MenuIcon from 'pixelarticons/svg/menu.svg?react'
 import Logomark from '@/assets/brand/logomark-stint.svg?react'
 import { cn } from '@/lib/utils'
@@ -33,7 +34,10 @@ function MobileNavbar() {
           <Logomark className="size-24 shrink-0 text-foreground" aria-label="Stint" />
           <SessionControls />
         </div>
-        <Menu />
+        <div className="flex shrink-0 items-center gap-2">
+          <GuideLink compact />
+          <Menu />
+        </div>
       </div>
       <nav className="flex h-40 items-center gap-4 border-t border-border pr-8 pl-12" aria-label="Week navigation">
         <span className="text-interactive text-foreground tabular-nums">{weekLabel(week)}</span>
@@ -87,11 +91,29 @@ function DesktopNavbar() {
         </button>
       </nav>
 
-      {/* Right: menu */}
-      <div className="flex justify-end">
+      {/* Right: guide + menu */}
+      <div className="flex items-center justify-end gap-4">
+        <GuideLink />
         <Menu />
       </div>
     </header>
+  )
+}
+
+/** The user guide (install steps, basics), in a new tab so the calendar stays put. */
+function GuideLink({ compact = false }: { compact?: boolean }) {
+  return (
+    <a
+      href="/guide"
+      target="_blank"
+      rel="noreferrer"
+      className={compact ? iconBtn : cn(ghost, 'text-foreground-tertiary hover:text-foreground')}
+      aria-label={compact ? 'Guide' : undefined}
+      title="How to install the desktop timer and use Stint"
+    >
+      <BookIcon className="size-16" />
+      {!compact && 'Guide'}
+    </a>
   )
 }
 
@@ -164,11 +186,31 @@ function Menu() {
               </DropdownMenu.Item>
             </>
           )}
+          <DropdownMenu.Separator className="-mx-4 my-4 h-px bg-border" />
+          <div className="flex gap-12 px-8 pt-2 pb-4">
+            {LEGAL.map(([href, label]) => (
+              <DropdownMenu.Item key={href} asChild>
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-4 text-[0.786rem] text-foreground-tertiary outline-none hover:text-foreground data-[highlighted]:text-foreground data-[highlighted]:underline"
+                >
+                  {label}
+                </a>
+              </DropdownMenu.Item>
+            ))}
+          </div>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
   )
 }
+
+const LEGAL: [string, string][] = [
+  ['/privacy', 'Privacy Policy'],
+  ['/terms', 'Terms of Use'],
+]
 
 const DATASETS: [Dataset, string][] = [
   ['sample', 'Sample data'],

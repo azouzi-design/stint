@@ -1,57 +1,22 @@
-// Privacy Policy and Terms of Use: static pages at /privacy and /terms (no sign-in needed).
-// Linked from the sign-in screen and Settings, and given to the Microsoft Store listing.
+// Privacy Policy and Terms of Use (/privacy, /terms; see Shell.tsx).
+// Linked from the sign-in screen, Settings and the navbar menu, and given to the Microsoft Store listing.
 // When what Stint collects or who it uses changes (analytics, payments, a new provider…), update
 // these pages and UPDATED in the same change.
 import type { ReactNode } from 'react'
-import Logomark from '@/assets/brand/logomark-stint.svg?react'
+import { Mail, SiteShell } from './Shell'
 
 const UPDATED = 'November 19, 2026'
 const OPERATOR = 'Ahmed Amir Azouzi'
-const CONTACT = 'hello@azouzi.design'
 
 export function LegalPage({ page }: { page: 'privacy' | 'terms' }) {
-  return (
-    <div className="min-h-screen bg-background font-geist text-foreground">
-      <header className="mx-auto flex max-w-[42rem] items-center justify-between gap-12 px-16 pt-24">
-        <a href="/" className="flex items-center gap-8 text-[0.929rem] font-medium text-foreground">
-          <Logomark className="size-20" aria-hidden />
-          Stint
-        </a>
-        <nav className="flex gap-16 text-[0.857rem]">
-          <NavLink href="/privacy" current={page === 'privacy'}>
-            Privacy
-          </NavLink>
-          <NavLink href="/terms" current={page === 'terms'}>
-            Terms
-          </NavLink>
-        </nav>
-      </header>
-      <main className="legal mx-auto max-w-[42rem] px-16 pt-40 pb-64">
-        {page === 'privacy' ? <Privacy /> : <Terms />}
-      </main>
-    </div>
-  )
+  return <SiteShell page={page}>{page === 'privacy' ? <Privacy /> : <Terms />}</SiteShell>
 }
-
-function NavLink({ href, current, children }: { href: string; current: boolean; children: ReactNode }) {
-  return (
-    <a
-      href={href}
-      aria-current={current ? 'page' : undefined}
-      className={current ? 'text-foreground' : 'text-foreground-tertiary hover:text-foreground'}
-    >
-      {children}
-    </a>
-  )
-}
-
-const Mail = () => <a href={`mailto:${CONTACT}`}>{CONTACT}</a>
 
 function Title({ children }: { children: ReactNode }) {
   return (
     <>
       <h1>{children}</h1>
-      <p className="legal-updated">Last updated: {UPDATED}</p>
+      <p className="doc-updated">Last updated: {UPDATED}</p>
     </>
   )
 }
@@ -79,8 +44,8 @@ function Privacy() {
           and profile picture; Stint only uses your email.
         </li>
         <li>
-          <strong>What you put in Stint.</strong> Your tasks, notes, goals, events (title, times, link), routines,
-          projects, focus sessions (start and end times, time focused, linked tasks) and settings.
+          <strong>What you put in Stint.</strong> Your tasks, notes, goals, events (title, times, link, notes), routines,
+          processes, projects, focus sessions (start and end times, time focused, linked tasks) and settings.
         </li>
         <li>
           <strong>Technical data.</strong> When you use Stint, the services that run it record standard logs, such as

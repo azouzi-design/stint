@@ -61,48 +61,197 @@
   }
 }
 
-/* Privacy / Terms pages (prototype/legal): long-form reading text */
-.legal h1 {
+/* Guide, Privacy, Terms pages (prototype/site): long-form reading text */
+.doc h1 {
   font-size: 1.714rem; /* 24px */
   font-weight: 500;
   letter-spacing: -0.01em;
 }
-.legal .legal-updated {
+.doc .doc-updated {
   margin-top: 4px;
   margin-bottom: 24px;
   font-size: 0.857rem;
   color: var(--color-foreground-tertiary);
 }
-.legal h2 {
+.doc h2 {
   margin-top: 32px;
   margin-bottom: 8px;
   font-size: 1.071rem; /* 15px */
   font-weight: 500;
 }
-.legal p,
-.legal li {
+.doc p,
+.doc li {
   font-size: 1rem;
   line-height: 1.65;
   color: var(--color-foreground-secondary);
 }
-.legal p + p,
-.legal p + ul,
-.legal ul + p {
+.doc p + p,
+.doc p + ul,
+.doc ul + p {
   margin-top: 12px;
 }
-.legal ul {
+.doc ul {
   list-style: disc;
   padding-left: 20px;
 }
-.legal li + li {
+.doc li + li {
   margin-top: 6px;
 }
-.legal strong {
+.doc strong {
   font-weight: 500;
   color: var(--color-foreground);
 }
-.legal a {
+.doc a {
   color: var(--color-foreground);
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+.doc h3 {
+  margin-top: 28px;
+  margin-bottom: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+}
+.doc section {
+  scroll-margin-top: 24px;
+}
+.doc code,
+.doc kbd {
+  border-radius: 4px;
+  background: var(--color-muted);
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.857rem;
+  color: var(--color-foreground);
+}
+.doc kbd {
+  border: 1px solid var(--color-border);
+  border-bottom-width: 2px;
+  background: var(--color-background);
+}
+
+/* Guide (prototype/site/Guide.tsx) */
+.doc .guide-toc {
+  margin-top: 20px;
+  list-style: decimal;
+  padding-left: 20px;
+}
+.doc .guide-toc li + li {
+  margin-top: 2px;
+}
+.doc .guide-steps {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.doc .guide-steps > li {
+  display: flex;
+  gap: 12px;
+  margin: 0;
+}
+.doc .guide-step-n {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--color-foreground);
+  color: var(--color-background);
+  font-size: 0.786rem;
+  font-weight: 500;
+  line-height: 1;
+}
+.doc .guide-step-title {
+  font-weight: 500;
+  color: var(--color-foreground);
+  line-height: 24px;
+}
+.doc .guide-step-body {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--color-foreground-secondary);
+}
+.doc a.guide-download {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  margin: 4px 6px 4px 0;
+  border-radius: 6px;
+  background: var(--color-foreground);
+  padding: 0 10px;
+  font-size: 0.786rem;
+  font-weight: 500;
+  color: var(--color-background);
+  text-decoration: none;
+}
+.doc a.guide-download:hover {
+  background: rgb(var(--primitive-neutral-80));
+}
+.doc .guide-shot {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+.doc .guide-shot-missing {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 0.857rem;
+  line-height: 1.5;
+  color: var(--color-foreground-tertiary);
+}
+.doc .guide-shot-missing span {
+  font-size: 0.714rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.doc .guide-shot-missing code {
+  align-self: flex-start;
+}
+.doc .guide-cards {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  gap: 12px;
+}
+.doc .guide-card {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 14px;
+}
+.doc .guide-card p {
+  font-size: 0.929rem;
+  line-height: 1.6;
+}
+.doc .guide-card .guide-card-title {
+  margin-bottom: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-foreground);
+}
+.doc .guide-faq {
+  border-bottom: 1px solid var(--color-border);
+  padding: 12px 0;
+}
+.doc .guide-faq:first-of-type {
+  border-top: 1px solid var(--color-border);
+  margin-top: 12px;
+}
+.doc .guide-faq summary {
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--color-foreground);
+}
+.doc .guide-faq p {
+  margin-top: 8px;
 }

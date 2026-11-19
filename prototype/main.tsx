@@ -4,17 +4,17 @@ import '@/index.css'
 import './prototype.css'
 import App from './App'
 import { initAuth } from './lib/auth'
-import { LegalPage } from './legal/Legal'
+import { sitePageFor } from './site/Shell'
+import { SitePageView } from './site/SitePageView'
 import { WidgetApp } from './widget/Widget'
 
 // `/?widget`: the desktop timer widget (loaded by prototype/desktop), instead of the calendar.
 const isWidget = new URLSearchParams(location.search).has('widget')
-// /privacy and /terms are their own built pages; this covers hosts that send them here instead.
-const legal = location.pathname.replace(/\/$/, '')
-const legalPage = legal === '/privacy' ? 'privacy' : legal === '/terms' ? 'terms' : null
+// /guide, /privacy and /terms are their own built pages; this covers hosts that send them here instead.
+const sitePage = sitePageFor(location.pathname)
 
-if (!legalPage) initAuth() // signed in: "My calendar" syncs with the database (web app + widget)
+if (!sitePage) initAuth() // signed in: "My calendar" syncs with the database (web app + widget)
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>{legalPage ? <LegalPage page={legalPage} /> : isWidget ? <WidgetApp /> : <App />}</StrictMode>,
+  <StrictMode>{sitePage ? <SitePageView page={sitePage} /> : isWidget ? <WidgetApp /> : <App />}</StrictMode>,
 )

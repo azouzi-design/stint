@@ -94,7 +94,12 @@ export function DesktopNotice({ className }: { className?: string }) {
           ) : (
             <p className="mt-8 text-foreground-secondary">The desktop timer is available for Mac and Windows.</p>
           )}
-          <p className="mt-6 text-[0.786rem] text-foreground-tertiary">It updates itself after that.</p>
+          <p className="mt-6 text-[0.786rem] text-foreground-tertiary">
+            It updates itself after that.{' '}
+            <a href="/guide#install" target="_blank" rel="noreferrer" className="underline underline-offset-2 hover:text-foreground">
+              Step-by-step guide
+            </a>
+          </p>
           {DOWNLOAD && (
             <div className="mt-12 flex items-center gap-8">
               <a
